@@ -177,3 +177,28 @@ describe('positionAddedNodes', () => {
     expect(ops[0].node.position).toEqual([5, 5]);
   });
 });
+
+describe('summarizeChange', () => {
+  it('lists added nodes, changed parameter paths and new edges, and nothing else', async () => {
+    const { summarizeChange } = await import('@/compose/change-summary');
+    const before: Workflow = {
+      name: 'w',
+      nodes: [
+        { id: '1', name: 'A', type: 'n8n-nodes-base.set', typeVersion: 3, position: [0, 0], parameters: { options: {} } },
+        { id: '2', name: 'B', type: 'n8n-nodes-base.httpRequest', typeVersion: 4, position: [260, 0], parameters: { url: 'x', options: {} } },
+      ],
+      connections: { A: { main: [[{ node: 'B', type: 'main', index: 0 }]] } },
+    };
+    const after: Workflow = {
+      ...before,
+      nodes: [
+        before.nodes[0],
+        { ...before.nodes[1], parameters: { url: 'x', options: { timeout: 5 } } },
+        { id: '3', name: 'C', type: 'n8n-nodes-base.noOp', typeVersion: 1, position: [520, 0], parameters: {} },
+      ],
+      connections: { A: { main: [[{ node: 'B', type: 'main', index: 0 }]] }, B: { main: [[{ node: 'C', type: 'main', index: 0 }]] } },
+    };
+    expect(summarizeChange(before, after)).toBe('verified change (read back from n8n): +node C; ~B: options.timeout; +edge B -> C; every other node and connection is unchanged');
+    expect(summarizeChange(before, before)).toMatch(/none/);
+  });
+});

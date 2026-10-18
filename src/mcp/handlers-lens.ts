@@ -20,6 +20,7 @@ import { WorkflowValidator, WorkflowValidationResult } from '../services/workflo
 import { EnhancedConfigValidator } from '../services/enhanced-config-validator';
 import { compileCreate, compileExtend, ComposeSpec } from '../compose/compile';
 import { NotationError } from '../compose/notation';
+import { summarizeChange } from '../compose/change-summary';
 import { handleCreateWorkflow } from './handlers-n8n-manager';
 import { handleUpdatePartialWorkflow } from './handlers-workflow-diff';
 
@@ -182,15 +183,9 @@ export async function handleComposeWorkflow(args: unknown, repository: NodeRepos
     const applied = await handleUpdatePartialWorkflow({ id: spec.workflowId, operations: plan.operations }, repository, context);
     if (!applied.success) return applied;
     const updated = (await client.getWorkflow(spec.workflowId)) as Workflow;
-    const parts = [
-      plan.added.length ? `added ${plan.added.join(', ')}` : '',
-      plan.updated.length ? `updated ${plan.updated.join(', ')}` : '',
-      plan.removed.length ? `removed ${plan.removed.join(', ')}` : '',
-      plan.linked ? `+${plan.linked} connections` : '',
-      plan.unlinked ? `-${plan.unlinked} connections` : '',
-    ].filter(Boolean);
     return [
-      `updated "${updated.name}" id=${spec.workflowId}: ${parts.join('; ')} (${updated.nodes.length} nodes now)`,
+      `updated "${updated.name}" id=${spec.workflowId} (${updated.nodes.length} nodes now)`,
+      summarizeChange(current, updated),
       formatValidation(await validate(updated, repository), before),
       NEXT(spec.workflowId),
     ].join('\n');
