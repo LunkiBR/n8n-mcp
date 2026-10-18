@@ -164,3 +164,19 @@ describe('lens views', () => {
   });
 });
 
+
+describe('lens dependencies with several inputs', () => {
+  it('does not flag a field missing when another input that ran produced it', () => {
+    const wf: Workflow = {
+      name: 'w',
+      nodes: [node('T', 'manualTrigger'), node('Left', 'set'), node('Right', 'set'), node('Join', 'merge'), node('Use', 'set', { assignments: { assignments: [{ name: 'x', value: '={{ $json.picked }}', type: 'string' }] } })],
+      connections: connect([['T', 'Left'], ['T', 'Right'], ['Left', 'Use'], ['Right', 'Use']]),
+    };
+    const run = (json: Record<string, unknown>) => [{ data: { main: [[{ json }]] } }];
+    const outputs = outputsFromExecution({ data: { resultData: { runData: { Left: run({ other: 1 }), Right: run({ picked: 2 }) } } } });
+    const ctx = createLensContext(wf, outputs);
+    expect(ctx.deps.originOf('Use', 'picked')).toMatchObject({ origin: 'Right', basis: 'execution' });
+    const none = outputsFromExecution({ data: { resultData: { runData: { Left: run({ other: 1 }), Right: run({ other: 2 }) } } } });
+    expect(createLensContext(wf, none).deps.originOf('Use', 'picked')).toMatchObject({ missing: true });
+  });
+});

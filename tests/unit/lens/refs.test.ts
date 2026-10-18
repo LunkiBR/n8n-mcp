@@ -47,3 +47,17 @@ describe('lens refs', () => {
     expect(normalizeFieldChain('')).toBeUndefined();
   });
 });
+
+describe('lens refs in code', () => {
+  const code = (jsCode: string) => ({ id: '1', name: 'C', type: 'n8n-nodes-base.code', typeVersion: 2, position: [0, 0] as [number, number], parameters: { jsCode } });
+
+  it('reads fields through callback and loop variables bound to input items', () => {
+    const refs = extractNodeRefs(code("return $input.all().map(i => ({ json: { tax: i.json.amount * 0.2 } }));\nfor (const row of items) { row.json.total; }"));
+    expect(refs.filter(r => !r.node).map(r => r.field)).toEqual(expect.arrayContaining(['amount', 'total']));
+  });
+
+  it('does not treat callbacks over a node read by name as input reads', () => {
+    const refs = extractNodeRefs(code("return $('Lookup').all().map(o => ({ json: { id: o.json.id } }));"));
+    expect(refs).toEqual([{ node: 'Lookup', field: undefined, at: 'jsCode' }]);
+  });
+});

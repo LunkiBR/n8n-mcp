@@ -309,7 +309,7 @@ export async function handleUpdatePartialWorkflow(
     const skipValidation = process.env.SKIP_WORKFLOW_VALIDATION === 'true';
     // Only problems this diff introduces block it; issues the workflow already had do not.
     const structureErrors = !skipValidation && diffResult.workflow
-      ? introducedStructureErrors(workflowBefore, validateWorkflowStructure(diffResult.workflow))
+      ? introducedStructureErrors(workflowBefore, validateWorkflowStructure(diffResult.workflow), diffResult.workflow)
       : [];
 
     // If validateOnly, return the same structural-validity verdict the apply path would.

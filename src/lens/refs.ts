@@ -33,7 +33,25 @@ const ITEMS_CALL = new RegExp(String.raw`\$items\(\s*${STR}`, 'g');
 const IMPLICIT_JSON = new RegExp(String.raw`\$json${FIELD_CHAIN}`, 'g');
 const IMPLICIT_INPUT = new RegExp(String.raw`\$input\s*\.\s*${ITEM_ACCESSOR}\s*\.\s*json${FIELD_CHAIN}`, 'g');
 const IMPLICIT_INPUT_WHOLE = /\$input\s*\.\s*(?:all|first|last)\s*\(|\$input\s*\.\s*item\b/g;
-const CODE_ITEM_JSON = new RegExp(String.raw`(?<![\w$.])(?:item|items\s*\[\s*\w+\s*\])\s*\.\s*json${FIELD_CHAIN}`, 'g');
+/** Code receivers that hold the node's input items. */
+const INPUT_ITEMS = String.raw`(?:\$input\s*\.\s*all\s*\(\s*\)|(?<![\w$.])items)`;
+/** Callback and loop variables bound to input items: `$input.all().map(i => ...)`, `for (const row of items)`. */
+const ITEM_BINDINGS = [
+  new RegExp(String.raw`${INPUT_ITEMS}\s*\.\s*(?:map|forEach|filter|flatMap|some|every|find|findIndex)\(\s*(?:async\s*)?\(?\s*([A-Za-z_$][\w$]*)`, 'g'),
+  new RegExp(String.raw`for\s*\(\s*(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s+of\s+${INPUT_ITEMS}`, 'g'),
+];
+
+/** `<item>.json.field` reads in code, where item is `item`, `items[n]` or a variable bound to input items. */
+function codeItemJson(code: string): RegExp {
+  const names = new Set(['item']);
+  for (const binding of ITEM_BINDINGS) {
+    binding.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = binding.exec(code)) !== null) names.add(match[1]);
+  }
+  const alternatives = [...names].map(n => n.replace(/\$/g, '\\$')).join('|');
+  return new RegExp(String.raw`(?<![\w$.])(?:${alternatives}|items\s*\[\s*\w+\s*\])\s*\.\s*json${FIELD_CHAIN}`, 'g');
+}
 
 /** Turns `.a["b c"][0].d` into `a.b c[0].d`. */
 export function normalizeFieldChain(chain: string | undefined): string | undefined {
@@ -69,11 +87,9 @@ export function extractRefsFromString(value: string, at: string, isCode: boolean
     refs.push({ node: unescapeName(match[2]), field: normalizeFieldChain(accessor?.[1]), at });
   }
 
-  for (const regex of [LEGACY_NODE]) {
-    regex.lastIndex = 0;
-    while ((match = regex.exec(value)) !== null) {
-      refs.push({ node: unescapeName(match[2]), field: normalizeFieldChain(match[3]), at });
-    }
+  LEGACY_NODE.lastIndex = 0;
+  while ((match = LEGACY_NODE.exec(value)) !== null) {
+    refs.push({ node: unescapeName(match[2]), field: normalizeFieldChain(match[3]), at });
   }
   LEGACY_NODE_DOT.lastIndex = 0;
   while ((match = LEGACY_NODE_DOT.exec(value)) !== null) {
@@ -85,7 +101,7 @@ export function extractRefsFromString(value: string, at: string, isCode: boolean
   }
 
   const implicit: RegExp[] = [IMPLICIT_JSON, IMPLICIT_INPUT];
-  if (isCode) implicit.push(CODE_ITEM_JSON);
+  if (isCode) implicit.push(codeItemJson(value));
   let sawImplicitField = false;
   for (const regex of implicit) {
     regex.lastIndex = 0;

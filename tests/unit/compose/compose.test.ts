@@ -202,3 +202,19 @@ describe('summarizeChange', () => {
     expect(summarizeChange(before, before)).toMatch(/none/);
   });
 });
+
+describe('compileExtend unlink and re-link', () => {
+  it('re-adds an edge that the same call unlinks', () => {
+    const wf: Workflow = {
+      id: 'w', name: 'W',
+      nodes: [
+        { id: '1', name: 'A', type: 'n8n-nodes-base.set', typeVersion: 3, position: [0, 0], parameters: {} },
+        { id: '2', name: 'B', type: 'n8n-nodes-base.set', typeVersion: 3, position: [260, 0], parameters: {} },
+      ],
+      connections: { A: { main: [[{ node: 'B', type: 'main', index: 0 }]] } },
+    };
+    const plan = compileExtend({ workflowId: 'w', nodes: { X: { type: 'noOp' } }, unlink: ['A -> B'], flow: ['A -> X', 'A -> B'] }, wf, repository);
+    const kinds = plan.operations.map(o => `${o.type}:${(o as any).source ?? ''}>${(o as any).target ?? ''}`);
+    expect(kinds).toEqual(['removeConnection:A>B', 'addNode:>', 'addConnection:A>X', 'addConnection:A>B']);
+  });
+});

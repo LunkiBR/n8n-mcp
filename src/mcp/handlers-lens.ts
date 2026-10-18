@@ -54,9 +54,10 @@ function errorResponse(error: unknown): McpToolResponse {
  */
 async function loadRunData(
   client: NonNullable<ReturnType<typeof getN8nApiClient>>,
-  workflowId: string,
+  workflow: Workflow,
   executionId?: string
 ): Promise<{ outputs?: Map<string, NodeOutput>; label?: string }> {
+  const workflowId = String(workflow.id);
   try {
     let id = executionId;
     if (!id) {
@@ -66,7 +67,11 @@ async function loadRunData(
     if (!id) return {};
     const execution = await client.getExecution(String(id), true);
     const outputs = outputsFromExecution(execution);
-    return { outputs, label: `execution ${id} (${execution.status ?? (execution.finished ? 'success' : 'unknown')}${execution.startedAt ? `, ${String(execution.startedAt).slice(0, 16)}` : ''})` };
+    // Run data from before the last edit describes a workflow that no longer exists as such.
+    const stale = execution.startedAt && workflow.updatedAt && new Date(String(execution.startedAt)) < new Date(workflow.updatedAt)
+      ? '; ran before the last edit, so fields may not match the current workflow; run it again for current data'
+      : '';
+    return { outputs, label: `execution ${id} (${execution.status ?? (execution.finished ? 'success' : 'unknown')}${execution.startedAt ? `, ${String(execution.startedAt).slice(0, 16)}` : ''}${stale})` };
   } catch (error) {
     if (executionId) throw error;
     logger.debug('Lens: no run data for workflow', { workflowId, error: error instanceof Error ? error.message : error });
@@ -82,7 +87,7 @@ export async function handleInspectWorkflow(args: unknown, context?: InstanceCon
 
     const workflow = (await client.getWorkflow(input.id)) as Workflow;
     const wantsRunData = input.view === 'zoom' && input.runData !== false;
-    const run = wantsRunData ? await loadRunData(client, input.id, input.executionId) : {};
+    const run = wantsRunData ? await loadRunData(client, { ...workflow, id: workflow.id ?? input.id }, input.executionId) : {};
 
     return inspect(workflow, {
       view: input.view,

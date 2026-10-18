@@ -82,8 +82,9 @@ export class DependencyIndex {
   /** Where a `$json` field read by `name` comes from. */
   originOf(name: string, field: string): FieldOrigin {
     const top = field.split('.')[0].replace(/\[\d+\]$/, '');
-    const parent = mainParents(this.graph, name)[0]?.from;
-    if (!parent) return { field, basis: 'unknown' };
+    const parentsOf = (node: string) => [...new Set(mainParents(this.graph, node).map(e => e.from).filter(p => p !== node))];
+    const parents = parentsOf(name);
+    if (parents.length === 0) return { field, basis: 'unknown' };
 
     const has = (node: string) => {
       const fields = this.outputs.get(node)?.fields;
@@ -91,24 +92,30 @@ export class DependencyIndex {
       return fields.has(field) || fields.has(top);
     };
 
-    const parentHas = has(parent);
-    if (parentHas === false) return { field, origin: undefined, basis: 'execution', missing: true };
-    if (parentHas === true) {
+    // With several inputs (Merge, branches joining), the field is missing only when no input
+    // that ran produced it.
+    const ran = parents.filter(p => has(p) !== undefined);
+    const holder = ran.find(p => has(p) === true);
+    if (ran.length > 0 && !holder) return { field, origin: undefined, basis: 'execution', missing: true };
+    if (holder) {
       // Walk up while the field is passed through unchanged; the origin is where it first appears.
-      let current = parent;
+      let current = holder;
       for (let hop = 0; hop < 30; hop++) {
-        const up = mainParents(this.graph, current)[0]?.from;
-        if (!up || has(up) !== true) break;
+        const up = parentsOf(current).find(p => has(p) === true);
+        if (!up) break;
         current = up;
       }
       return { field, origin: current, basis: 'execution' };
     }
 
-    // No run data: look for a node that statically writes the field.
-    let current: string | undefined = parent;
-    for (let hop = 0; current && hop < 30; hop++) {
-      if (writesField(this.graph.nodes.get(current), top)) return { field, origin: current, basis: 'static' };
-      current = mainParents(this.graph, current)[0]?.from;
+    // No run data: breadth-first search upstream for a node that statically writes the field.
+    const seen = new Set<string>();
+    let frontier = parents;
+    for (let hop = 0; frontier.length > 0 && hop < 30; hop++) {
+      const writer = frontier.find(p => writesField(this.graph.nodes.get(p), top));
+      if (writer) return { field, origin: writer, basis: 'static' };
+      frontier.forEach(p => seen.add(p));
+      frontier = [...new Set(frontier.flatMap(parentsOf))].filter(p => !seen.has(p));
     }
     return { field, basis: 'unknown' };
   }

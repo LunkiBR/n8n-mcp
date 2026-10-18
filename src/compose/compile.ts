@@ -139,9 +139,13 @@ export function compileExtend(spec: ComposeSpec, workflow: Workflow, repository:
 
   // Unlinks resolve against the workflow as it is now; edges of removed nodes go with the node.
   let unlinked = 0;
+  // removeConnection drops every edge between the pair for that type, so track pairs, not edges.
+  const pair = (e: FlowEdge) => `${e.from}|${e.to}|${e.type}`;
+  const unlinkedPairs = new Set<string>();
   for (const edge of dedupe(parseFlow(spec.unlink ?? [], knownNodes(workflow.nodes, {}, repository)))) {
     if (!hasEdge(workflow, edge)) throw new NotationError(`cannot unlink "${edge.from} -> ${edge.to}": no such connection`);
     unlinked++;
+    unlinkedPairs.add(pair(edge));
     if (removed.includes(edge.from) || removed.includes(edge.to)) continue;
     operations.push({ type: 'removeConnection', source: edge.from, target: edge.to, sourceOutput: edge.type, targetInput: edge.type });
   }
@@ -150,7 +154,8 @@ export function compileExtend(spec: ComposeSpec, workflow: Workflow, repository:
   const remaining = workflow.nodes.filter(n => !removed.includes(n.name));
   const known = knownNodes(remaining, specs, repository);
 
-  const edges = dedupe(parseFlow(spec.flow ?? [], known)).filter(e => !hasEdge(workflow, e));
+  // An edge that exists now is skipped, unless this call unlinks it first.
+  const edges = dedupe(parseFlow(spec.flow ?? [], known)).filter(e => !hasEdge(workflow, e) || unlinkedPairs.has(pair(e)));
   const added = Object.keys(specs).filter(name => !existing.has(name) || removed.includes(name));
   const updated = Object.keys(specs).filter(name => existing.has(name) && !removed.includes(name));
 
