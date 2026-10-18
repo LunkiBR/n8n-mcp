@@ -275,7 +275,26 @@ function emitValue(key: string, value: unknown, indent: string, lines: string[],
     return;
   }
   lines.push(`${indent}${key}:`);
+  if (!opts.full && isResourceMapper(record)) {
+    // The column schema is the editor's cached copy of the target table, often most of a node's
+    // size; the mapping that matters is in `value`. Summarize the schema unless asked for it.
+    const { schema, ...rest } = record;
+    emitObject(rest, `${indent}  `, lines, opts);
+    lines.push(`${indent}  schema: ${schemaSummary(schema as Array<Record<string, unknown>>)} (view=zoom full=true lists them)`);
+    return;
+  }
   emitObject(record, `${indent}  `, lines, opts);
+}
+
+/** n8n's resource mapper value: `{ mappingMode, value, schema: [...] }`. */
+function isResourceMapper(record: Record<string, unknown>): boolean {
+  return Array.isArray(record.schema) && ('mappingMode' in record || 'value' in record);
+}
+
+function schemaSummary(schema: Array<Record<string, unknown>>): string {
+  const active = schema.filter(c => !c.removed);
+  const required = active.filter(c => c.required).map(c => String(c.id ?? c.displayName));
+  return `${active.length} columns${schema.length > active.length ? ` (+${schema.length - active.length} removed)` : ''}${required.length ? `, required: ${required.join(', ')}` : ''}`;
 }
 
 function emitObject(record: Record<string, unknown>, indent: string, lines: string[], opts: EmitOptions) {
@@ -334,7 +353,10 @@ function readsLines(ctx: LensContext, name: string): string[] {
       return field;
     });
     const fields = fieldNotes.length ? `: ${fieldNotes.join(', ')}` : '';
-    lines.push(`  ${read.via} <- ${read.node}${regionTag(ctx, read.node)}${fields}${outputNote(ctx, read.node)}`);
+    const note = outputNote(ctx, read.node);
+    // A plain input with nothing read by name and no run data is already on the `in:` line.
+    if (read.via === 'input' && !fields && !note) continue;
+    lines.push(`  ${read.via} <- ${read.node}${regionTag(ctx, read.node)}${fields}${note}`);
   }
   return lines;
 }
@@ -359,8 +381,17 @@ export function renderZoom(ctx: LensContext, names: string[], opts: EmitOptions)
       if (readers.length) {
         lines.push(`read by: ${readers.map(r => `${r.node}${regionTag(ctx, r.node)} (${r.via}${r.fields.length ? `: ${r.fields.join(', ')}` : ''})`).join('; ')}`);
       }
+      // Every connection in and out, in the notation n8n_compose_workflow's flow and unlink take,
+      // so an edit can be planned from the zoom alone.
+      const incoming = mainParents(ctx.graph, name).map(e => {
+        const source = ctx.graph.nodes.get(e.from)!;
+        const label = outputLabel(source, e.output);
+        const port = baseOutputCount(source) > 1 || source.onError === 'continueErrorOutput' ? `.${label}` : '';
+        return `${e.from}${port}${regionTag(ctx, e.from)}${e.input > 0 ? ` -> [${e.input}]` : ''}`;
+      });
+      if (incoming.length) lines.push(`in: ${incoming.join('; ')}`);
       const edges = edgesText(ctx, name).trim();
-      if (edges) lines.push(edges);
+      lines.push(edges ? `out: ${edges}` : 'out: none');
       const ai = aiText(ctx, name);
       if (ai) lines.push(`ai: ${ai}`);
       const own = ctx.outputs.get(name);

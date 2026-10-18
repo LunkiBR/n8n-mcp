@@ -69,7 +69,7 @@ try {
       console.log(text);
     }
     if (process.env.BENCH_LOG) {
-      appendFileSync(process.env.BENCH_LOG, JSON.stringify({ t: Date.now(), condition, tool, argChars, resultChars: text.length, spilled }) + '\n');
+      appendFileSync(process.env.BENCH_LOG, JSON.stringify({ t: Date.now(), condition, tool, argChars, resultChars: text.length, spilled, args: JSON.stringify(args).slice(0, 240) }) + '\n');
     }
   }
 } finally {

@@ -177,3 +177,43 @@ export function placeNewNodes(newNames: string[], edges: FlowEdge[], existing: M
   newNames.filter(n => !placed.has(n)).forEach((name, i) => placed.set(name, free([maxX + COL, ORIGIN[1] + i * ROW], ROW)));
   return placed;
 }
+
+interface DiffOperationLike {
+  type: string;
+  node?: { id?: string; name?: string; position?: Position };
+  source?: string;
+  target?: string;
+  sourceOutput?: string;
+  sourceIndex?: number;
+  targetIndex?: number;
+  branch?: 'true' | 'false';
+  case?: number;
+}
+
+/**
+ * Gives a position to every `addNode` operation that has none, next to the neighbor it is wired
+ * to in the same batch, so nodes added by partial updates do not pile up at the canvas origin.
+ */
+export function positionAddedNodes(nodes: Array<{ id: string; name: string; position: Position }>, operations: DiffOperationLike[]): void {
+  const pending = operations.filter(op => op.type === 'addNode' && op.node?.name && !op.node.position);
+  if (pending.length === 0) return;
+  const nameOf = new Map<string, string>();
+  for (const node of nodes) nameOf.set(node.id, node.name);
+  for (const op of operations) if (op.type === 'addNode' && op.node?.id && op.node.name) nameOf.set(op.node.id, op.node.name);
+  const resolve = (ref: string | undefined) => (ref ? nameOf.get(ref) ?? ref : '');
+  const edges: FlowEdge[] = operations
+    .filter(op => op.type === 'addConnection')
+    .map(op => ({
+      from: resolve(op.source),
+      to: resolve(op.target),
+      type: op.sourceOutput ?? 'main',
+      output: op.sourceIndex ?? op.case ?? (op.branch === 'false' ? 1 : 0),
+      input: op.targetIndex ?? 0,
+    }));
+  const existing = new Map<string, Position>(nodes.map(n => [n.name, n.position]));
+  for (const op of operations) {
+    if (op.type === 'addNode' && op.node?.name && op.node.position) existing.set(op.node.name, op.node.position);
+  }
+  const placed = placeNewNodes(pending.map(op => op.node!.name!), edges, existing);
+  for (const op of pending) op.node!.position = placed.get(op.node!.name!);
+}

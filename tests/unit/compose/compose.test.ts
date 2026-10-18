@@ -157,3 +157,23 @@ describe('compileExtend', () => {
     expect(() => compileExtend({ workflowId: 'w1', unlink: ['Save -> Hook'] }, existing, repository)).toThrow(/no such connection/);
   });
 });
+
+describe('positionAddedNodes', () => {
+  it('places a node added without a position next to the node it is wired from', async () => {
+    const { positionAddedNodes } = await import('@/compose/layout');
+    const nodes = [{ id: 'a', name: 'A', position: [100, 200] as [number, number] }];
+    const ops: any[] = [
+      { type: 'addNode', node: { name: 'B', type: 'n8n-nodes-base.set' } },
+      { type: 'addConnection', source: 'a', target: 'B' },
+    ];
+    positionAddedNodes(nodes, ops);
+    expect(ops[0].node.position).toEqual([360, 200]);
+  });
+
+  it('leaves positions the caller gave untouched', async () => {
+    const { positionAddedNodes } = await import('@/compose/layout');
+    const ops: any[] = [{ type: 'addNode', node: { name: 'B', position: [5, 5] } }];
+    positionAddedNodes([], ops);
+    expect(ops[0].node.position).toEqual([5, 5]);
+  });
+});

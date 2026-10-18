@@ -15,6 +15,7 @@ import { logger } from '../utils/logger';
 import { InstanceContext, getInstanceScopeId } from '../types/instance-context';
 import { validateWorkflowStructure, cleanWorkflowForUpdate, introducedStructureErrors } from '../services/n8n-validation';
 import { NodeRepository } from '../database/node-repository';
+import { positionAddedNodes } from '../compose/layout';
 import { WorkflowVersioningService } from '../services/workflow-versioning-service';
 import { WorkflowValidator } from '../services/workflow-validator';
 import { EnhancedConfigValidator } from '../services/enhanced-config-validator';
@@ -264,6 +265,9 @@ export async function handleUpdatePartialWorkflow(
         // Continue with update even if backup fails (non-blocking)
       }
     }
+
+    // Nodes added without a position are placed next to the neighbor they are wired to.
+    positionAddedNodes(workflow.nodes ?? [], input.operations as any[]);
 
     // Apply diff operations
     const diffEngine = new WorkflowDiffEngine();

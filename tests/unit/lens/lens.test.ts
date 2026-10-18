@@ -143,4 +143,24 @@ describe('lens views', () => {
   it('rejects an unknown region with the list of regions', () => {
     expect(() => inspect(hiddenDependencyWorkflow(), { view: 'outline', region: 'R9' })).toThrow(/region "R9" not found; regions: R1/);
   });
+
+  it('zoom lists incoming and outgoing connections in flow notation', () => {
+    const text = inspect(hiddenDependencyWorkflow(), { view: 'zoom', nodes: ['Notify', 'Is Gold'] });
+    expect(text).toContain('in: Is Gold.true');
+    expect(text).toContain('out: true-> Notify');
+    expect(text).toContain('out: none');
+  });
+
+  it('summarizes resource mapper column schemas unless full is asked for', () => {
+    const wf = hiddenDependencyWorkflow();
+    const schema = Array.from({ length: 30 }, (_, i) => ({ id: `col${i}`, displayName: `col${i}`, required: i === 0, removed: i > 9, type: 'string' }));
+    wf.nodes.push(node('Save Row', 'airtable', { columns: { mappingMode: 'defineBelow', value: { col0: '={{ $json.id }}' }, schema } }));
+    wf.connections['Notify'] = { main: [[{ node: 'Save Row', type: 'main', index: 0 }]] };
+    const short = inspect(wf, { view: 'zoom', nodes: ['Save Row'] });
+    expect(short).toContain('schema: 10 columns (+20 removed), required: col0');
+    expect(short).toContain('col0: ={{ $json.id }}');
+    expect(short).not.toContain('displayName');
+    expect(inspect(wf, { view: 'zoom', nodes: ['Save Row'], full: true })).toContain('displayName');
+  });
 });
+

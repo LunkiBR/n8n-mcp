@@ -88,6 +88,9 @@ const TASKS = {
     },
   },
   'create-support-triage': { setup: async runId => ({ workflowName: `[${runId}] Support Triage`, path: `support-${slug(runId)}` }) },
+  'dm-origin': { setup: async runId => ({ workflowId: await copyTemplate('template-7311', runId) }) },
+  'edit-lead-engine': { setup: async runId => ({ workflowId: await copyTemplate('template-7311', runId) }) },
+  calibrate: { setup: async () => ({}) },
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -118,6 +121,41 @@ const byName = wf => Object.fromEntries(wf.nodes.map(n => [n.name, n]));
 const stable = value => JSON.stringify(value, (k, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map(key => [key, v[key]])) : v));
 
 const GRADERS = {
+  calibrate: async () => [['done', true]],
+  'edit-lead-engine': async runId => {
+    const state = loadState(runId);
+    const before = fixture('template-7311');
+    const after = await api('GET', `/workflows/${state.workflowId}`);
+    const n = byName(after);
+    const stamp = n['Stamp Sent At'];
+    const assigns = stamp?.parameters?.assignments?.assignments ?? [];
+    const sentAt = assigns.find(a => a.name === 'sent_at');
+    const loop = n['Loop Over Lead To DM'];
+    const loopBefore = byName(before)['Loop Over Lead To DM'];
+    const otherNames = before.nodes.map(x => x.name).filter(x => x !== 'Loop Over Lead To DM');
+    const loopRest = { ...(loop?.parameters ?? {}) };
+    delete loopRest.batchSize;
+    const otherConnections = Object.keys(before.connections).filter(k => k !== 'Update Lead Record - DM Sent').every(k => stable(after.connections[k]) === stable(before.connections[k]));
+    return [
+      ['stamp_is_set_node', stamp?.type === 'n8n-nodes-base.set'],
+      ['stamp_sets_sent_at', !!sentAt && String(sentAt.value).replace(/\s+/g, '').includes('$now.toISO()')],
+      ['dm_sent_to_stamp', outEdges(after, 'Update Lead Record - DM Sent').some(e => e.to === 'Stamp Sent At')],
+      ['no_direct_edge', !outEdges(after, 'Update Lead Record - DM Sent').some(e => e.to === 'Loop Over Lead To DM')],
+      ['stamp_to_loop', outEdges(after, 'Stamp Sent At').some(e => e.to === 'Loop Over Lead To DM' && e.input === 0)],
+      ['batch_size_5', Number(loop?.parameters?.batchSize) === 5],
+      ['loop_rest_unchanged', stable(loopRest) === stable(loopBefore.parameters)],
+      ['other_nodes_unchanged', after.nodes.length === before.nodes.length + 1 && otherNames.every(x => n[x] && stable(n[x].parameters) === stable(byName(before)[x].parameters))],
+      ['other_connections_unchanged', otherConnections],
+    ];
+  },
+  'dm-origin': async runId => {
+    const a = readAnswer(runId) ?? {};
+    return [
+      ['generator_node', norm(a.generator_node) === norm('Personalized DM Message Writer1')],
+      ['model', norm(a.model).includes('o4-mini')],
+      ['store_node', norm(a.store_node) === norm('Update Lead Record - Personalized Message')],
+    ];
+  },
   'dm-credentials': async runId => {
     const a = readAnswer(runId) ?? {};
     return [
@@ -140,11 +178,11 @@ const GRADERS = {
     return [
       ['models', sameSet(a.models, ['deepseek/deepseek-chat-v3-0324:free', 'models/gemini-2.5-pro'])],
       ['tool_node', norm(a.tool_node) === norm('Reasearch')],
-      ['tool_target_workflow', norm(a.tool_target_workflow) === norm('Helper for SMS') || norm(a.tool_target_workflow) === norm('SrUy5WyflJfrWop0')],
+      ['tool_target_workflow', norm(a.tool_target_workflow).includes(norm('Helper for SMS')) || norm(a.tool_target_workflow).includes(norm('SrUy5WyflJfrWop0'))],
       ['output_keys', sameSet(a.output_parser_keys, ['intro', 'text', 'image_description'])],
     ];
   },
-  'edit-content-engine': async runId => {
+  'edit-content-engine': async (runId, base = 'https://example.com') => {
     const state = loadState(runId);
     const before = fixture('template-9100');
     const after = await api('GET', `/workflows/${state.workflowId}`);
@@ -153,7 +191,7 @@ const GRADERS = {
     const ping = n['Ping Analytics'];
     const checks = [
       ['ping_exists', !!ping && ping.type === 'n8n-nodes-base.httpRequest'],
-      ['ping_post_url', !!ping && norm(ping.parameters?.method) === 'post' && norm(ping.parameters?.url).replace(/^=/, '') === 'https://example.com/analytics'],
+      ['ping_post_url', !!ping && norm(ping.parameters?.method) === 'post' && norm(ping.parameters?.url).replace(/^=/, '') === (base === 'https://example.com' ? 'https://example.com/analytics' : `${base}/analytics-ping`)],
       ['ping_after_save_post', outEdges(after, 'Save Post').some(e => e.to === 'Ping Analytics' && e.output === 0)],
       ['save_post_edges_kept', outEdges(before, 'Save Post').every(e => outEdges(after, 'Save Post').some(x => x.to === e.to && x.output === e.output))],
       ['gemini_timeout', Number(n['HTTP- Gemini']?.parameters?.options?.timeout) === 30000],
@@ -199,7 +237,7 @@ const GRADERS = {
       ['node_count_kept', draft.nodes.length === 28],
     ];
   },
-  'create-support-triage': async runId => {
+  'create-support-triage': async (runId, base = 'https://example.com') => {
     const state = loadState(runId);
     const list = await api('GET', `/workflows?limit=250`);
     const meta = list.data.find(w => w.name === state.workflowName);
@@ -215,10 +253,10 @@ const GRADERS = {
     const model = aiFrom('@n8n/n8n-nodes-langchain.lmChatOpenAi', 'ai_languageModel');
     const modelName = model ? norm(model.parameters?.model?.value ?? model.parameters?.model) : '';
     const sw = ofType('n8n-nodes-base.switch')[0];
-    const billing = httpTo('https://example.com/billing');
-    const bugs = httpTo('https://example.com/bugs');
-    const pager = httpTo('https://example.com/pager');
-    const backlog = httpTo('https://example.com/backlog');
+    const billing = httpTo(`${base}/billing`);
+    const bugs = httpTo(`${base}/bugs`);
+    const pager = httpTo(`${base}/pager`);
+    const backlog = httpTo(`${base}/backlog`);
     const swTargets = sw ? outEdges(wf, sw.name).map(e => e.to) : [];
     const urgent = wf.nodes.find(x => x.type === 'n8n-nodes-base.if' && outEdges(wf, x.name).some(e => e.output === 0 && e.to === pager?.name));
     const loop = ofType('n8n-nodes-base.splitInBatches')[0];
@@ -243,6 +281,12 @@ const GRADERS = {
     ];
   },
 };
+
+const LOCAL = 'http://127.0.0.1:5690/webhook';
+TASKS['edit-content-engine-v2'] = TASKS['edit-content-engine'];
+TASKS['create-support-triage-v2'] = TASKS['create-support-triage'];
+GRADERS['edit-content-engine-v2'] = runId => GRADERS['edit-content-engine'](runId, LOCAL);
+GRADERS['create-support-triage-v2'] = runId => GRADERS['create-support-triage'](runId, LOCAL);
 
 const [command, taskId, runId] = process.argv.slice(2);
 if (command === 'setup') {

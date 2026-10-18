@@ -28,5 +28,30 @@
     "kind": "create",
     "prompt": "Create a new n8n workflow named exactly '{workflowName}' that does the following. (1) A Webhook trigger, POST, path '{path}'. (2) A Set node named 'Normalize Ticket' that outputs the fields subject, body and customer_email from the webhook body. (3) An AI Agent node that classifies the ticket into a category (billing, bug or other) and an urgency from 1 to 5, using an OpenAI chat model node with model gpt-4o-mini and a Structured Output Parser node. (4) A Switch node that routes on the category with three outputs: billing goes to an HTTP Request POST to https://example.com/billing; bug goes to an HTTP Request POST to https://example.com/bugs, which must continue on error through its error output into a Set node named 'Bug Intake Failed'; other goes to a No Operation node. (5) After the billing and bugs HTTP requests succeed, an If node checks whether urgency >= 4 and, when true, sends an HTTP Request POST to https://example.com/pager. (6) A second trigger: a Schedule Trigger every hour that does an HTTP Request GET to https://example.com/backlog, then a Loop Over Items (Split in Batches) node with batch size 5 whose loop output goes to a Code node named 'Score' that connects back to the loop node, and whose done output goes to a No Operation node named 'Backlog Done'. The workflow must pass validation with no errors.",
     "answer": "{\"workflow_id\": \"<id>\"}"
+  },
+  "calibrate": {
+    "kind": "calibrate",
+    "prompt": "This is a calibration run. Read the tool list, then do nothing else.",
+    "answer": "{\"done\": true}"
+  },
+  "dm-origin": {
+    "kind": "read",
+    "prompt": "Workflow {workflowId} is a LinkedIn lead generation and DM outreach automation. The message text that the node 'Send DM Message' sends was generated earlier, in another part of the workflow, and stored in Airtable before being read back. Which node generates that message text, which model does that node use, and which node writes the text to Airtable?",
+    "answer": "{\"generator_node\": \"<node name>\", \"model\": \"<model id>\", \"store_node\": \"<node name>\"}"
+  },
+  "edit-content-engine-v2": {
+    "kind": "edit",
+    "prompt": "In workflow {workflowId}: (1) add an HTTP Request node named 'Ping Analytics' that sends a POST to http://127.0.0.1:5690/webhook/analytics-ping, connected so it runs right after the node 'Save Post' (keep Save Post's existing connections); (2) set the request timeout option of the node 'HTTP- Gemini' to 30000 ms. Change nothing else in the workflow.",
+    "answer": "{\"done\": true}"
+  },
+  "create-support-triage-v2": {
+    "kind": "create",
+    "prompt": "Create a new n8n workflow named exactly '{workflowName}' that does the following. (1) A Webhook trigger, POST, path '{path}'. (2) A Set node named 'Normalize Ticket' that outputs the fields subject, body and customer_email from the webhook body. (3) An AI Agent node that classifies the ticket into a category (billing, bug or other) and an urgency from 1 to 5, using an OpenAI chat model node with model gpt-4o-mini and a Structured Output Parser node. (4) A Switch node that routes on the category with three outputs: billing goes to an HTTP Request POST to http://127.0.0.1:5690/webhook/billing; bug goes to an HTTP Request POST to http://127.0.0.1:5690/webhook/bugs, which must continue on error through its error output into a Set node named 'Bug Intake Failed'; other goes to a No Operation node. (5) After the billing and bugs HTTP requests succeed, an If node checks whether urgency >= 4 and, when true, sends an HTTP Request POST to http://127.0.0.1:5690/webhook/pager. (6) A second trigger: a Schedule Trigger every hour that does an HTTP Request GET to http://127.0.0.1:5690/webhook/backlog, then a Loop Over Items (Split in Batches) node with batch size 5 whose loop output goes to a Code node named 'Score' that connects back to the loop node, and whose done output goes to a No Operation node named 'Backlog Done'. The workflow must pass validation with no errors.",
+    "answer": "{\"workflow_id\": \"<id>\"}"
+  },
+  "edit-lead-engine": {
+    "kind": "edit",
+    "prompt": "In workflow {workflowId}: (1) insert a Set node named 'Stamp Sent At' between the nodes 'Update Lead Record - DM Sent' and 'Loop Over Lead To DM', so that 'Update Lead Record - DM Sent' feeds 'Stamp Sent At', which feeds 'Loop Over Lead To DM', and there is no longer a direct connection between the two original nodes; the new node sets a field named sent_at to the expression {{ $now.toISO() }}. (2) Set the batch size of the node 'Loop Over Lead To DM' to 5. Change nothing else in the workflow.",
+    "answer": "{\"done\": true}"
   }
 }

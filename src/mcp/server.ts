@@ -49,6 +49,7 @@ import { handleManageAgents } from './handlers-agents';
 import { handleExploreNodeResources, handleListCatalog } from './handlers-official-tools';
 import { handleUpdatePartialWorkflow } from './handlers-workflow-diff';
 import { handleInspectWorkflow, handleComposeWorkflow } from './handlers-lens';
+import { formatToolJson } from './tool-json';
 import { getToolDocumentation, getToolsOverview } from './tools-documentation';
 import { PROJECT_VERSION } from '../utils/version';
 import { getNodeTypeAlternatives, getWorkflowNodeType } from '../utils/node-utils';
@@ -1060,9 +1061,9 @@ export class N8NDocumentationMCPServer {
             // Clean up the result to ensure it matches the outputSchema
             const cleanResult = this.sanitizeValidationResult(result, name);
             structuredContent = cleanResult;
-            responseText = JSON.stringify(cleanResult, null, 2);
+            responseText = formatToolJson(cleanResult);
           } else {
-            responseText = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+            responseText = typeof result === 'string' ? result : formatToolJson(result);
           }
         } catch (jsonError) {
           logger.warn(`Failed to stringify tool result for ${name}:`, jsonError);
