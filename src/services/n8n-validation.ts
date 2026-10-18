@@ -308,6 +308,29 @@ function describeParseFailure(error: unknown): string {
 }
 
 // Validate workflow structure
+/**
+ * Structure errors in `after` that `before` did not already have.
+ *
+ * Partial updates must not be blocked by problems the edit did not cause: real workflows,
+ * templates in particular, often carry an orphan node, and refusing every diff on them leaves
+ * no way to edit the workflow. A disconnected-nodes error counts as pre-existing when every
+ * node it names was already disconnected.
+ */
+export function introducedStructureErrors(before: Partial<Workflow> | null | undefined, after: string[]): string[] {
+  if (!before || after.length === 0) return after;
+  const beforeErrors = validateWorkflowStructure(before);
+  const disconnected = (message: string) =>
+    message.startsWith('Disconnected nodes detected:')
+      ? [...message.split('. Each node')[0].matchAll(/"([^"]+)" \(/g)].map(m => m[1])
+      : null;
+  const wasDisconnected = new Set(beforeErrors.flatMap(e => disconnected(e) ?? []));
+  return after.filter(error => {
+    if (beforeErrors.includes(error)) return false;
+    const names = disconnected(error);
+    return !(names && names.length > 0 && names.every(n => wasDisconnected.has(n)));
+  });
+}
+
 export function validateWorkflowStructure(workflow: Partial<Workflow>): string[] {
   const errors: string[] = [];
 
