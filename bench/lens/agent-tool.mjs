@@ -9,8 +9,10 @@
 // printed, because the shell tool that drives this CLI truncates long output. An MCP client would
 // have put the whole result in context, so spilling can only lower a condition's token count.
 //
-// BENCH_CONDITION=upstream disables the two lens tools, which leaves the server behaving as
-// upstream n8n-mcp. BENCH_LOG=<file> appends one JSON line per call.
+// BENCH_CONDITION selects the server: `upstream` runs an unmodified upstream checkout
+// (BENCH_UPSTREAM_ROOT), `fork` runs this repository, `fork-nolens` runs this repository with the
+// two lens tools disabled (to separate their effect from other fork changes).
+// BENCH_LOG=<file> appends one JSON line per call.
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { appendFileSync, readFileSync, existsSync, writeFileSync } from 'fs';
@@ -18,12 +20,12 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const root = join(here, '..', '..');
+const condition = process.env.BENCH_CONDITION ?? 'fork';
+const root = condition === 'upstream' ? (process.env.BENCH_UPSTREAM_ROOT ?? 'C:/Users/lr103/n8n-bench/upstream') : join(here, '..', '..');
 const envFile = process.env.BENCH_ENV ?? 'D:/n8nmcp/testbed/testbed.env';
 const fileEnv = existsSync(envFile)
   ? Object.fromEntries(readFileSync(envFile, 'utf8').split(/\r?\n/).filter(l => l.includes('=')).map(l => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]))
   : {};
-const condition = process.env.BENCH_CONDITION ?? 'fork';
 const SPILL_CHARS = 25000;
 const env = {
   ...process.env,
@@ -34,7 +36,7 @@ const env = {
   LOG_LEVEL: 'error',
   DISABLE_CONSOLE_OUTPUT: 'true',
   N8N_MCP_TELEMETRY_DISABLED: 'true',
-  ...(condition === 'upstream' ? { DISABLED_TOOLS: 'n8n_inspect_workflow,n8n_compose_workflow' } : {}),
+  ...(condition === 'fork-nolens' ? { DISABLED_TOOLS: 'n8n_inspect_workflow,n8n_compose_workflow' } : {}),
 };
 
 const [tool, rawArgs] = process.argv.slice(2);

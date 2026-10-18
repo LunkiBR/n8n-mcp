@@ -30,8 +30,38 @@ function isSubNode(edges: FlowEdge[], name: string): boolean {
   return edges.some(e => e.from === name && e.type !== 'main') && !edges.some(e => e.type === 'main' && (e.from === name || e.to === name));
 }
 
-/** Layered layout for a whole new workflow. */
+/** Groups of nodes connected by any edge, in the order their first node is listed. */
+function components(names: string[], edges: FlowEdge[]): string[][] {
+  const parent = new Map(names.map(n => [n, n]));
+  const find = (n: string): string => (parent.get(n) === n ? n : find(parent.get(n)!));
+  for (const edge of edges) if (parent.has(edge.from) && parent.has(edge.to)) parent.set(find(edge.from), find(edge.to));
+  const groups = new Map<string, string[]>();
+  for (const name of names) {
+    const root = find(name);
+    groups.set(root, [...(groups.get(root) ?? []), name]);
+  }
+  return [...groups.values()];
+}
+
+/**
+ * Layered layout for a whole new workflow. Each connected part (one per trigger, usually) gets its
+ * own horizontal band, so separate flows never share columns or cross.
+ */
 export function layoutWorkflow({ names, edges }: LayoutInput): Map<string, Position> {
+  const positions = new Map<string, Position>();
+  let top = ORIGIN[1];
+  for (const group of components(names, edges)) {
+    const members = new Set(group);
+    const part = layoutComponent(group, edges.filter(e => members.has(e.from) && members.has(e.to)));
+    const ys = [...part.values()].map(([, y]) => y);
+    const shift = top - Math.min(...ys);
+    for (const [name, [x, y]] of part) positions.set(name, [x, y + shift]);
+    top += Math.max(...ys) - Math.min(...ys) + ROW * 2;
+  }
+  return positions;
+}
+
+function layoutComponent(names: string[], edges: FlowEdge[]): Map<string, Position> {
   const main = edges.filter(e => e.type === 'main');
   const roots = names.filter(n => !isSubNode(edges, n));
 

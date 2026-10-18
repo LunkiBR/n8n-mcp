@@ -1,0 +1,32 @@
+{
+  "dm-credentials": {
+    "kind": "read",
+    "prompt": "Workflow {workflowId} is a LinkedIn lead generation and DM outreach automation. Find the node that actually sends the LinkedIn DM. Which node supplies the Unipile API key, DSN and account id that this node uses, and which node supplies the message text? What URL path does it call on the Unipile API?",
+    "answer": "{\"sender_node\": \"<node name>\", \"credentials_source_node\": \"<node name>\", \"text_source_node\": \"<node name>\", \"endpoint_path\": \"<path, e.g. /api/v1/...>\"}"
+  },
+  "drive-folders": {
+    "kind": "read",
+    "prompt": "Workflow {workflowId} backs up n8n workflows to Google Drive. Which nodes log in to the n8n instance to get a session cookie, and which URL path do they call? Which nodes create folders in Google Drive?",
+    "answer": "{\"login_nodes\": [\"<node name>\", ...], \"login_path\": \"<path>\", \"folder_creating_nodes\": [\"<node name>\", ...]}"
+  },
+  "agent-wiring": {
+    "kind": "read",
+    "prompt": "Workflow {workflowId} is a content engine. For the AI agent node named 'Post repurpose': which language models (model ids) are connected to it, which tool node is attached to it and which workflow does that tool call, and which keys does its structured output parser produce?",
+    "answer": "{\"models\": [\"<model id>\", ...], \"tool_node\": \"<node name>\", \"tool_target_workflow\": \"<workflow name or id>\", \"output_parser_keys\": [\"<key>\", ...]}"
+  },
+  "edit-content-engine": {
+    "kind": "edit",
+    "prompt": "In workflow {workflowId}: (1) add an HTTP Request node named 'Ping Analytics' that sends a POST to https://example.com/analytics, connected so it runs right after the node 'Save Post' (keep Save Post's existing connections); (2) set the request timeout option of the node 'HTTP- Gemini' to 30000 ms. Change nothing else in the workflow.",
+    "answer": "{\"done\": true}"
+  },
+  "fix-discount": {
+    "kind": "debug",
+    "prompt": "Workflow {workflowId} processes orders posted to its webhook. It ran successfully, but every order comes out with total_after_discount = null and the summary total is 0. Find the root cause using the workflow and its latest execution, and fix the workflow with the smallest change. Do not add or remove nodes.",
+    "answer": "{\"root_cause_node\": \"<node name you changed>\", \"explanation\": \"<one sentence>\"}"
+  },
+  "create-support-triage": {
+    "kind": "create",
+    "prompt": "Create a new n8n workflow named exactly '{workflowName}' that does the following. (1) A Webhook trigger, POST, path '{path}'. (2) A Set node named 'Normalize Ticket' that outputs the fields subject, body and customer_email from the webhook body. (3) An AI Agent node that classifies the ticket into a category (billing, bug or other) and an urgency from 1 to 5, using an OpenAI chat model node with model gpt-4o-mini and a Structured Output Parser node. (4) A Switch node that routes on the category with three outputs: billing goes to an HTTP Request POST to https://example.com/billing; bug goes to an HTTP Request POST to https://example.com/bugs, which must continue on error through its error output into a Set node named 'Bug Intake Failed'; other goes to a No Operation node. (5) After the billing and bugs HTTP requests succeed, an If node checks whether urgency >= 4 and, when true, sends an HTTP Request POST to https://example.com/pager. (6) A second trigger: a Schedule Trigger every hour that does an HTTP Request GET to https://example.com/backlog, then a Loop Over Items (Split in Batches) node with batch size 5 whose loop output goes to a Code node named 'Score' that connects back to the loop node, and whose done output goes to a No Operation node named 'Backlog Done'. The workflow must pass validation with no errors.",
+    "answer": "{\"workflow_id\": \"<id>\"}"
+  }
+}
