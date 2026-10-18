@@ -63,6 +63,7 @@ Create a workflow, or extend and edit one, from compact notation instead of full
     "Webhook": { "type": "webhook", "params": { "path": "lead", "httpMethod": "POST" } },
     "Is Hot":  { "type": "if", "params": { "conditions": { "...": "..." } } },
     "Enrich":  { "type": "httpRequest", "params": { "url": "https://api.example.com" }, "onError": "continueErrorOutput" },
+    "Alert":   { "type": "set", "params": { "assignments": { "assignments": [{ "name": "error", "value": "={{ $json.error.message }}", "type": "string" }] } } },
     "Agent":   { "type": "agent", "params": { "text": "={{ $json.summary }}" } },
     "GPT":     { "type": "lmChatOpenAi", "params": { "model": { "__rl": true, "mode": "list", "value": "gpt-4o-mini" } } }
   },
