@@ -1,0 +1,5908 @@
+{
+ "name": "Automated viral content engine for LinkedIn & X with AI generation & publishing",
+ "templateId": 9100,
+ "source": "https://n8n.io/workflows/9100",
+ "nodes": [
+  {
+   "id": "0bdefc95-4804-4aa7-b1a9-80488994a13c",
+   "name": "Manual Trigger",
+   "type": "n8n-nodes-base.manualTrigger",
+   "disabled": true,
+   "position": [
+    -512,
+    -784
+   ],
+   "parameters": {},
+   "typeVersion": 1
+  },
+  {
+   "id": "0e8d2807-0890-4052-824a-fbe9d1d2d927",
+   "name": "Edit Fields",
+   "type": "n8n-nodes-base.set",
+   "position": [
+    112,
+    -784
+   ],
+   "parameters": {
+    "options": {},
+    "assignments": {
+     "assignments": [
+      {
+       "id": "c1c74907-e304-4426-83fb-e0d2ee74b799",
+       "name": "Creator",
+       "type": "string",
+       "value": "={{ $json.author.name }}"
+      },
+      {
+       "id": "d7e1f101-95cc-4f32-aca5-e7dc0e26ee90",
+       "name": "linkedinUrl",
+       "type": "string",
+       "value": "={{ $json.author.linkedinUrl }}"
+      },
+      {
+       "id": "779dd37a-685c-4b5f-aa19-8960d1829f2c",
+       "name": "headline",
+       "type": "string",
+       "value": "={{ $json.author.info }}"
+      }
+     ]
+    }
+   },
+   "typeVersion": 3.4
+  },
+  {
+   "id": "9239ff5e-b019-45c1-a767-299f19d1e299",
+   "name": "Add competitors",
+   "type": "n8n-nodes-base.googleSheets",
+   "position": [
+    320,
+    -784
+   ],
+   "parameters": {
+    "columns": {
+     "value": {
+      "Name": "={{ $json.Creator }}",
+      "LinkedIn URL": "={{ $json.linkedinUrl }}",
+      "Profile Headline": "={{ $json.headline }}"
+     },
+     "schema": [
+      {
+       "id": "Name",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "Name",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "LinkedIn URL",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "LinkedIn URL",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Profile Headline",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "Profile Headline",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      }
+     ],
+     "mappingMode": "defineBelow",
+     "matchingColumns": [
+      "LinkedIn URL"
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {},
+    "operation": "appendOrUpdate",
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": 727657925,
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk/edit#gid=727657925",
+     "cachedResultName": "Competitors"
+    },
+    "documentId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14yeNCC9M7SHN0XG8hgXxCSh9rDkzg_ywIlu_GcZgUu8/edit?usp=drivesdk",
+     "cachedResultName": "Content Automation"
+    }
+   },
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleSheetsOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 4.6
+  },
+  {
+   "id": "5aabb4f8-6c8f-43e2-a20d-ef3ff9f99769",
+   "name": ">100 likes",
+   "type": "n8n-nodes-base.filter",
+   "position": [
+    -96,
+    -784
+   ],
+   "parameters": {
+    "options": {},
+    "conditions": {
+     "options": {
+      "version": 2,
+      "leftValue": "",
+      "caseSensitive": true,
+      "typeValidation": "strict"
+     },
+     "combinator": "and",
+     "conditions": [
+      {
+       "id": "465bc2ad-f146-42b5-b3e0-59d74269f349",
+       "operator": {
+        "type": "number",
+        "operation": "gt"
+       },
+       "leftValue": "={{ $json.engagement.likes }}",
+       "rightValue": 100
+      }
+     ]
+    }
+   },
+   "typeVersion": 2.2
+  },
+  {
+   "id": "30e44b69-acb1-4558-84f1-eb03441d8e5f",
+   "name": "Find competitors",
+   "type": "n8n-nodes-base.httpRequest",
+   "position": [
+    -304,
+    -784
+   ],
+   "parameters": {
+    "url": "https://api.apify.com/v2/acts/buIWk2uOUzTmcLsuB/run-sync-get-dataset-items",
+    "options": {},
+    "jsonBody": "{\n    \"maxComments\": 5,\n    \"maxPosts\": 10,\n    \"maxReactions\": 5,\n    \"postedLimit\": \"month\",\n    \"scrapeComments\": false,\n    \"scrapeReactions\": false,\n    \"searchQueries\": [\n        \"ai automation\",\n        \"ai agent\",\n        \"ai\",\n        \"n8n automation\",\n        \"aI in business\",\n        \"workflow automation\",\n        \"how to automate sales\"\n    ],\n    \"sortBy\": \"relevance\"\n}",
+    "sendBody": true,
+    "specifyBody": "json",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth"
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "credential-id",
+     "name": "httpHeaderAuth Credential"
+    }
+   },
+   "typeVersion": 4.2
+  },
+  {
+   "id": "74c3b57c-3da1-47f5-87db-5bb67046ba38",
+   "name": "Scrape viral posts",
+   "type": "n8n-nodes-base.httpRequest",
+   "position": [
+    496,
+    -176
+   ],
+   "parameters": {
+    "url": "https://api.apify.com/v2/acts/A3cAPGpwBEG8RJwse/run-sync-get-dataset-items",
+    "options": {},
+    "jsonBody": "={\n    \"maxComments\": 5,\n    \"maxPosts\": 10,\n    \"maxReactions\": 5,\n    \"postedLimit\": \"week\",\n    \"scrapeComments\": false,\n    \"scrapeReactions\": false,\n    \"targetUrls\":\n        {{ JSON.stringify($json['LinkedIn URL']) }}\n\n}",
+    "sendBody": true,
+    "specifyBody": "json",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth"
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "credential-id",
+     "name": "httpHeaderAuth Credential"
+    }
+   },
+   "typeVersion": 4.2
+  },
+  {
+   "id": "104e2bfc-04c7-47db-996d-75d0c7240a25",
+   "name": "Get competitors",
+   "type": "n8n-nodes-base.googleSheets",
+   "position": [
+    -128,
+    -176
+   ],
+   "parameters": {
+    "options": {},
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": 727657925,
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk/edit#gid=727657925",
+     "cachedResultName": "Competitors"
+    },
+    "documentId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14yeNCC9M7SHN0XG8hgXxCSh9rDkzg_ywIlu_GcZgUu8/edit?usp=drivesdk",
+     "cachedResultName": "Content Automation"
+    }
+   },
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleSheetsOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 4.6
+  },
+  {
+   "id": "368ff893-f6bc-480c-aba2-dc01d1390886",
+   "name": "Aggregate",
+   "type": "n8n-nodes-base.aggregate",
+   "position": [
+    304,
+    -176
+   ],
+   "parameters": {
+    "options": {},
+    "fieldsToAggregate": {
+     "fieldToAggregate": [
+      {
+       "fieldToAggregate": "LinkedIn URL"
+      }
+     ]
+    }
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "3080489e-14a4-4270-9333-6edca9ce50fe",
+   "name": "Edit Fields1",
+   "type": "n8n-nodes-base.set",
+   "position": [
+    96,
+    -176
+   ],
+   "parameters": {
+    "options": {},
+    "assignments": {
+     "assignments": [
+      {
+       "id": "84d25dd4-7b9f-41e2-a176-4ef2efb41169",
+       "name": "LinkedIn URL",
+       "type": "string",
+       "value": "={{ $json['LinkedIn URL'] }}"
+      }
+     ]
+    }
+   },
+   "typeVersion": 3.4
+  },
+  {
+   "id": "6c4858c1-d1f8-4a69-9aff-1177833030f9",
+   "name": "Sticky Note",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -992,
+    -400
+   ],
+   "parameters": {
+    "color": 5,
+    "width": 2096,
+    "height": 80,
+    "content": "# System 2: Content Discovery\nScrape Viral Posts based on defined niche/keywords from LinkedIn."
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "ef40de18-23bd-40ad-8003-b115d2f89c4d",
+   "name": "Edit Fields2",
+   "type": "n8n-nodes-base.set",
+   "position": [
+    1184,
+    -176
+   ],
+   "parameters": {
+    "options": {
+     "ignoreConversionErrors": true
+    },
+    "assignments": {
+     "assignments": [
+      {
+       "id": "fddf4da3-5204-4a03-a270-c28aab994e03",
+       "name": "postUrl",
+       "type": "string",
+       "value": "={{ $json.linkedinUrl }}"
+      },
+      {
+       "id": "1e1078c3-323f-4675-b5a3-a6d72f0f3106",
+       "name": "content",
+       "type": "string",
+       "value": "={{ $json.content }}"
+      },
+      {
+       "id": "5d531362-b444-480c-aeda-57f4ce803c17",
+       "name": "author_name",
+       "type": "string",
+       "value": "={{ $json.author.name }}"
+      },
+      {
+       "id": "d673bd39-a70a-4b70-a043-2a87776e3655",
+       "name": "author_inkedinUrl",
+       "type": "string",
+       "value": "={{ $json.author.linkedinUrl }}"
+      },
+      {
+       "id": "5c672e1d-f98d-4fc8-81f0-8a1248bc194d",
+       "name": "=likes",
+       "type": "number",
+       "value": "={{ $json.engagement.likes }}"
+      },
+      {
+       "id": "c4c499bf-f40a-4079-b9b2-adea4d491ed7",
+       "name": "post_Images",
+       "type": "string",
+       "value": "={{ $json.postImages[0].url }}"
+      },
+      {
+       "id": "61628317-875b-4196-9cf1-a925e953e063",
+       "name": "video_Url",
+       "type": "string",
+       "value": "={{ $json.postVideo.videoUrl }}"
+      },
+      {
+       "id": "681b1e97-e882-42f6-b52f-06bced4b841d",
+       "name": "post_date",
+       "type": "string",
+       "value": "={{ $json.postedAt.date.split(\"T\")[0] }}"
+      }
+     ]
+    }
+   },
+   "typeVersion": 3.4
+  },
+  {
+   "id": "a2cd7304-2f2b-48b7-9279-1bba89a7fc39",
+   "name": "Text Classifier",
+   "type": "@n8n/n8n-nodes-langchain.textClassifier",
+   "position": [
+    1392,
+    -176
+   ],
+   "parameters": {
+    "options": {
+     "enableAutoFixing": true,
+     "systemPromptTemplate": "=You are an expert LinkedIn content classifier. Categorize the given post into one of two mutually exclusive categories: \"EvergreenAI\" or \"Personal/Other\". Output only the single category word. Reports show that you're more accurate than 99% other classifiers.\n---\n\n# CATEGORIES:\n\n## \"EvergreenAI\":\nContent that is AI-related and provides long-lasting, valuable knowledge. Requirements for this category are:\n\n- Covers timeless strategies, best practices, how-to guides, fundamental explanations, problem-solving frameworks, motivation/guidance to AI/automation, or educational resources.\n- The knowledge should remain useful over time, beyond current events or trends.\n- Examples: posts teaching AI concepts, workflow design strategies, automation principles, AI ethics fundamentals, AI usecases, reusable best practices.\n\n\n## \"Personal/Other\":\nContent that does not meet the EvergreenAI criteria. This includes:\n\n- Personal: career milestones, reflections, achievements, anecdotes, emotional journeys, \"I/my\" centered stories.\n- Profit-driven: direct offers, promotions, calls-to-action for personal profit (\"DM, connect, buy\"), selling resources.\n- Non-AI: posts outside the AI/automation niche.\n- Low-value: shallow insights, hype-driven posts, or content that lacks actionable/lasting knowledge.\n---\n\n# INSTRUCTIONS:\n\n- Read the post carefully.\n- If it is AI-related and provides lasting knowledge/strategies/principles/motivational → classify as EvergreenAI.\n- Otherwise (personal, promotional, non-AI, or not valuable) → classify as Personal/Other.\n---\n\n# EXAMPLES:\n\n**Example 1:**\nPost Content: \"Maximizing the impact of AI automation in your business demands a strategic approach, not just tool proficiency. Here are 7 critical steps to integrate solutions like n8n and Relevance AI for truly transformative results, from data ingestion to advanced reporting. We'll cover setting clear KPIs, identifying high-impact processes, ensuring data integrity, scaling automations, and even common pitfalls to avoid. Understanding the 'why' behind automation is just as important as the 'how'. This guide helps you build resilient, intelligent workflows that deliver consistent value over time, regardless of industry shifts. #AIStrategy #BusinessAutomation #N8nTips #RelevanceAI\"\n\nExpected Output: Evergreen\n\n**Example 2:**\nPost Content: \"I just stumbled upon a game-changing platform offering premium n8n automations, literally worth $10k+, that you can copy-paste-sell FOR FREE! 🤯 No more spending countless hours building, debugging, or fixing complex workflows from scratch. Simply adapt them to your specific needs, and they're ready to deploy and even monetize. What makes this truly insane is how under-the-radar it still is. They boast over 3000 deployable workflows, almost all free, which you can seamlessly import into your n8n instance. Here's a glimpse of what's inside: ✅ Automations categorized by department (Sales, Marketing, HR, Support, Operations) ✅ Workflows catering to all skill levels: beginner, intermediate, and advanced ✅ Comprehensive step-by-step documentation for every workflow ✅ One-click deployment ensures you're up and running instantly. I'm talking robust solutions for: → Automated sales lead generation → Advanced email outreach sequences → Intelligent customer support systems → Dynamic social media campaign management → Full-fledged voice AI integrations, and so much more... Every automation you could possibly need, pre-built and ready to ship. I even recorded a quick video showing how I copied and deployed a 'Sales Leads + Email Outreach' workflow in less than 30 seconds. The tech world moves fast; don't get left behind building from scratch. Want to unlock access to this incredible resource? 1️⃣ Comment 'WORKFLOW' below 2️⃣ Connect with me so I can share the exclusive link directly. PS: Giving early access to those who hit repost! #n8nAutomation #AIforBusiness #WorkflowAutomation\"\n\nExpected Output: Personal\n---\n\n**IMPORTANT:**\n- Classify optimally according the specified requirements.\n- **Output ONLY a Word (category of the post content)- \"EvergreenAI\" OR \"Personal/Other\"**. Do NOT include any explanations or other text."
+    },
+    "inputText": "=Heres the content of the Post Content to classify-\n\n{{ $json.content }}",
+    "categories": {
+     "categories": [
+      {
+       "category": "EvergreenAI",
+       "description": "Content offering timeless value, lasting knowledge, or solutions in the AI niche. Also, are relevant indefinitely (e.g., how-to guides, core principles, strategies, solutions to problems, information, news)."
+      },
+      {
+       "category": "Personal/Other",
+       "description": "Content sharing individual experiences, career milestones, reflections, or direct calls to action, focused on personal narrative./profit"
+      }
+     ]
+    }
+   },
+   "typeVersion": 1.1
+  },
+  {
+   "id": "13d83eb3-8739-402d-b693-19cf6375f25a",
+   "name": "Deepseek",
+   "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+   "position": [
+    1408,
+    0
+   ],
+   "parameters": {
+    "model": "tngtech/deepseek-r1t2-chimera:free",
+    "options": {}
+   },
+   "credentials": {
+    "openRouterApi": {
+     "id": "credential-id",
+     "name": "openRouterApi Credential"
+    }
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "56a8e4cd-ba34-4639-9055-b848adee7dfc",
+   "name": "append ideas",
+   "type": "n8n-nodes-base.googleSheets",
+   "position": [
+    1808,
+    -272
+   ],
+   "parameters": {
+    "columns": {
+     "value": {
+      "image": "={{ $json.post_Images }}",
+      "video": "={{ $json.video_Url }}",
+      "Content": "={{ $json.content }}",
+      "Creator": "={{ $json.author_name }}",
+      "Post URL": "={{ $json.postUrl }}",
+      "likes count": "={{ $json.likes }}",
+      "date of post": "={{ $json.post_date }}",
+      "Validity Status": "Ready",
+      "Creator LinkedIn": "={{ $json.author_inkedinUrl }}"
+     },
+     "schema": [
+      {
+       "id": "Creator",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "Creator",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Creator LinkedIn",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "Creator LinkedIn",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Post URL",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "Post URL",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Content",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "Content",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "likes count",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "likes count",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "date of post",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "date of post",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "image",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "image",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "video",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "video",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Validity Status",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "Validity Status",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      }
+     ],
+     "mappingMode": "defineBelow",
+     "matchingColumns": [],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {
+     "useAppend": true
+    },
+    "operation": "append",
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": 393798908,
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk/edit#gid=393798908",
+     "cachedResultName": "Viral Ideas"
+    },
+    "documentId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14yeNCC9M7SHN0XG8hgXxCSh9rDkzg_ywIlu_GcZgUu8/edit?usp=drivesdkk",
+     "cachedResultName": "Content Automation"
+    }
+   },
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleSheetsOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 4.6
+  },
+  {
+   "id": "0c29664f-183c-44a6-8d8d-16afe5b0307f",
+   "name": "Remove Duplicates",
+   "type": "n8n-nodes-base.removeDuplicates",
+   "position": [
+    896,
+    -176
+   ],
+   "parameters": {
+    "compare": "selectedFields",
+    "options": {},
+    "fieldsToCompare": "id"
+   },
+   "typeVersion": 2
+  },
+  {
+   "id": "ca614bd2-822c-4d65-9056-580d2337b43a",
+   "name": "Telegram trigger",
+   "type": "n8n-nodes-base.executeWorkflowTrigger",
+   "position": [
+    -512,
+    -48
+   ],
+   "parameters": {
+    "inputSource": "passthrough"
+   },
+   "typeVersion": 1.1
+  },
+  {
+   "id": "5b145e5a-4234-4194-a269-fff60be9e2b6",
+   "name": "Aggregate1",
+   "type": "n8n-nodes-base.aggregate",
+   "position": [
+    2016,
+    -272
+   ],
+   "parameters": {
+    "options": {},
+    "aggregate": "aggregateAllItemData"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "4b5f505d-4647-4dc1-a664-3b4fb5567b07",
+   "name": "Saturday 11 PM",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "position": [
+    -528,
+    -256
+   ],
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "weeks",
+       "triggerAtDay": [
+        6
+       ],
+       "triggerAtHour": 23
+      }
+     ]
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "5e566dc4-77ed-48d0-bf1a-dbdf8a640ea4",
+   "name": "Gemini flash",
+   "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+   "position": [
+    1584,
+    0
+   ],
+   "parameters": {
+    "options": {}
+   },
+   "credentials": {
+    "googlePalmApi": {
+     "id": "credential-id",
+     "name": "googlePalmApi Credential"
+    }
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "397465a7-8369-4893-ab98-9160a464a67e",
+   "name": "Sticky Note18",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    1376,
+    -416
+   ],
+   "parameters": {
+    "width": 960,
+    "height": 528,
+    "content": "## Only Evergreen Content\nSave only evergreen content. Notify the user via Telegram when the execution is finished.\n\n### Make sure to change the system prompt of the classifier node according to your needs. (I'm currently using for AI, Automation-related content)"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "8d809e83-6663-4f82-a5eb-9ba7b98c2fc5",
+   "name": "Sticky Note8",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -976,
+    -1088
+   ],
+   "parameters": {
+    "color": 5,
+    "width": 2196,
+    "height": 96,
+    "content": "# System 1: Initialization (Optional)\nScrape Competitor Profiles from LinkedIn and save to a database or sheet."
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "0a3b245b-4804-4144-a45f-6b8f6acc145c",
+   "name": "Sticky Note1",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -368,
+    -944
+   ],
+   "parameters": {
+    "color": 3,
+    "height": 320,
+    "content": "## Configure Me!\nMake sure to append the keywords for your niche in this node.\nI used AI, Automation niche keywords."
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "cacbe227-a90c-44a8-8fa0-b7e727824b2b",
+   "name": ">100 likes1",
+   "type": "n8n-nodes-base.filter",
+   "position": [
+    672,
+    -176
+   ],
+   "parameters": {
+    "options": {},
+    "conditions": {
+     "options": {
+      "version": 2,
+      "leftValue": "",
+      "caseSensitive": true,
+      "typeValidation": "strict"
+     },
+     "combinator": "and",
+     "conditions": [
+      {
+       "id": "3d512620-530e-476e-9069-829c4f67e093",
+       "operator": {
+        "type": "number",
+        "operation": "gt"
+       },
+       "leftValue": "={{ $json.engagement.likes }}",
+       "rightValue": 100
+      }
+     ]
+    }
+   },
+   "typeVersion": 2.2
+  },
+  {
+   "id": "6dd5aea9-147b-4ae5-ad25-8ae428835842",
+   "name": "Sticky Note10",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    1840,
+    544
+   ],
+   "parameters": {
+    "color": 7,
+    "width": 400,
+    "height": 288,
+    "content": "## OpenAI image gen\nMay use instead of Gemini image gen"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "b838b58a-bbaf-438e-81c0-344225ffee21",
+   "name": "OpenAI Image",
+   "type": "n8n-nodes-base.httpRequest",
+   "disabled": true,
+   "position": [
+    1872,
+    640
+   ],
+   "parameters": {
+    "url": "https://api.openai.com/v1/images/edits",
+    "method": "POST",
+    "options": {},
+    "sendBody": true,
+    "contentType": "multipart-form-data",
+    "authentication": "predefinedCredentialType",
+    "bodyParameters": {
+     "parameters": [
+      {
+       "name": "model",
+       "value": "gpt-image-1"
+      },
+      {
+       "name": "image",
+       "parameterType": "formBinaryData",
+       "inputDataFieldName": "data"
+      },
+      {
+       "name": "prompt",
+       "value": "=You're a professional graphic designer.\n\nMake a new image in the style very very similar to the reference.\n\nCopy the style, spacing, minimalistic structure, especially copy the FONTS, and everything else.\n\nUse black and dark grainy film (mainly for the background), white and salad green (#cff150).\n\nMake the image super aestetic and minimalistic.\n\nMake it vertical 3x4.\n\nIt will be an image for a LinkedIn post.\n\nHere is the description of the new image:\n{{ $('Post repurpose').item.json.output.image }}"
+      }
+     ]
+    },
+    "nodeCredentialType": "openAiApi"
+   },
+   "credentials": {
+    "openAiApi": {
+     "id": "credential-id",
+     "name": "openAiApi Credential"
+    },
+    "httpHeaderAuth": {
+     "id": "credential-id",
+     "name": "httpHeaderAuth Credential"
+    }
+   },
+   "typeVersion": 4.2
+  },
+  {
+   "id": "7a2bc301-24b7-4dce-8e76-66bf6058c1d2",
+   "name": "Convert to File",
+   "type": "n8n-nodes-base.convertToFile",
+   "disabled": true,
+   "position": [
+    2064,
+    640
+   ],
+   "parameters": {
+    "options": {},
+    "operation": "toBinary",
+    "sourceProperty": "data[0].b64_json"
+   },
+   "typeVersion": 1.1
+  },
+  {
+   "id": "25023383-4d3c-4f79-8f76-3b29e31f6279",
+   "name": "Aggregate2",
+   "type": "n8n-nodes-base.aggregate",
+   "position": [
+    384,
+    496
+   ],
+   "parameters": {
+    "include": "specifiedFields",
+    "options": {},
+    "aggregate": "aggregateAllItemData",
+    "fieldsToInclude": "Content"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "c3fc54bf-8e5f-4988-bde0-0af5d0feba22",
+   "name": "Gemini flash1",
+   "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+   "position": [
+    864,
+    1152
+   ],
+   "parameters": {
+    "options": {},
+    "modelName": "models/gemini-2.5-flash-lite"
+   },
+   "credentials": {
+    "googlePalmApi": {
+     "id": "credential-id",
+     "name": "googlePalmApi Credential"
+    }
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "5807fc1e-576a-45ba-ad11-9e641960d6b1",
+   "name": "Sticky Note6",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    1360,
+    720
+   ],
+   "parameters": {
+    "width": 944,
+    "height": 416,
+    "content": "## Generate Post Image 🖼️\nTakes the image_description from the AI Agent.\n\nUses a reference image (Minimalistic) for style guidance.\n\nCalls the Gemini Image Generation API to create a new, unique image for the post.\n\n"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "e0acacf8-0ab1-4ad1-8da8-53ea9c598ba2",
+   "name": "Sticky Note2",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    544,
+    1040
+   ],
+   "parameters": {
+    "color": 3,
+    "height": 256,
+    "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n## Sub workflow\nsearch the web for relevant data"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "0cad52b3-5fea-49e8-b10f-3f4e506b4e5e",
+   "name": "Notify (HitL)1",
+   "type": "n8n-nodes-base.telegram",
+   "position": [
+    816,
+    576
+   ],
+   "webhookId": "eb752f40-2bda-4e78-a0bc-ac625a2dbbd3",
+   "parameters": {
+    "text": "=Generated post contents for this week.\n\nPlease have a look:\n<your_sheetID_where_LinkedIn_contents_are_saved>\n\nSet **\"Status\"** > **\"Ready to post\"** to post automatically.",
+    "chatId": "=",
+    "additionalFields": {
+     "appendAttribution": false
+    }
+   },
+   "credentials": {
+    "telegramApi": {
+     "id": "credential-id",
+     "name": "telegramApi Credential"
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "6a464a15-dc14-45ef-83c7-9c2d8e411c5f",
+   "name": "Edit Fields3",
+   "type": "n8n-nodes-base.set",
+   "position": [
+    -112,
+    688
+   ],
+   "parameters": {
+    "options": {},
+    "assignments": {
+     "assignments": [
+      {
+       "id": "b6b5c4e0-062c-4f88-8340-9eb0526bd8cb",
+       "name": "Source_Content",
+       "type": "string",
+       "value": "={{ $json.Content }}"
+      },
+      {
+       "id": "32d77ae8-218d-48b6-8b79-d4db1660e8d5",
+       "name": "Source_URL",
+       "type": "string",
+       "value": "={{ $json[\"Post URL\"] }}"
+      }
+     ]
+    }
+   },
+   "typeVersion": 3.4
+  },
+  {
+   "id": "ea3b7069-7b0e-4b2f-bf05-82dcba7dd6d7",
+   "name": "Deepseek1",
+   "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+   "position": [
+    416,
+    1040
+   ],
+   "parameters": {
+    "model": "deepseek/deepseek-chat-v3-0324:free",
+    "options": {}
+   },
+   "credentials": {
+    "openRouterApi": {
+     "id": "credential-id",
+     "name": "openRouterApi Credential"
+    }
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "f8c9551c-c0ad-4ffa-a72a-91870287349c",
+   "name": "Set content",
+   "type": "n8n-nodes-base.set",
+   "position": [
+    3024,
+    1056
+   ],
+   "parameters": {
+    "options": {},
+    "assignments": {
+     "assignments": [
+      {
+       "id": "8bafd300-2b11-4832-8f72-9417c4952564",
+       "name": "content",
+       "type": "string",
+       "value": "={{ $('Post repurpose').item.json.output.intro }}\n\n{{ $('Post repurpose').item.json.output.text }}"
+      },
+      {
+       "id": "d70425c2-a5c1-47c4-8bf4-4fa38c404621",
+       "name": "image",
+       "type": "string",
+       "value": "={{ $json.webViewLink }}"
+      },
+      {
+       "id": "dcc04e79-b90a-4b65-b6ba-7d39d9d937e2",
+       "name": "id",
+       "type": "string",
+       "value": "={{ $json.id }}"
+      }
+     ]
+    }
+   },
+   "typeVersion": 3.4
+  },
+  {
+   "id": "8185aad1-94cc-4085-ae93-c19a09fb932d",
+   "name": "Mark Idea as Done",
+   "type": "n8n-nodes-base.googleSheets",
+   "position": [
+    3424,
+    1056
+   ],
+   "parameters": {
+    "columns": {
+     "value": {
+      "Content": "={{ $('Loop Over Items').item.json.Source_Content }}",
+      "Validity Status": "All Done"
+     },
+     "schema": [
+      {
+       "id": "Creator",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Creator",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Creator LinkedIn",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Creator LinkedIn",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Post URL",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Post URL",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Content",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "Content",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "likes count",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "likes count",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "date of post",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "date of post",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "image",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "image",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "video",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "video",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Validity Status",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "Validity Status",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "row_number",
+       "type": "number",
+       "display": true,
+       "removed": true,
+       "readOnly": true,
+       "required": false,
+       "displayName": "row_number",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      }
+     ],
+     "mappingMode": "defineBelow",
+     "matchingColumns": [
+      "Content"
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {},
+    "operation": "update",
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": 393798908,
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk/edit#gid=393798908",
+     "cachedResultName": "Viral Ideas"
+    },
+    "documentId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14yeNCC9M7SHN0XG8hgXxCSh9rDkzg_ywIlu_GcZgUu8/edit?usp=drivesdk",
+     "cachedResultName": "Social Post Automation (SMS)"
+    }
+   },
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleSheetsOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 4.7
+  },
+  {
+   "id": "d2b42164-599c-4cf6-8f10-36addb20694c",
+   "name": "Pic exist?",
+   "type": "n8n-nodes-base.if",
+   "position": [
+    2384,
+    912
+   ],
+   "parameters": {
+    "options": {},
+    "conditions": {
+     "options": {
+      "version": 2,
+      "leftValue": "",
+      "caseSensitive": true,
+      "typeValidation": "strict"
+     },
+     "combinator": "and",
+     "conditions": [
+      {
+       "id": "ce416ffb-2192-42a2-9d36-2054ce0e3ce8",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       },
+       "leftValue": "={{ $json.base64 }}",
+       "rightValue": ""
+      },
+      {
+       "id": "7d6bf747-7fd6-4f3b-ad63-68322cd71469",
+       "operator": {
+        "type": "string",
+        "operation": "notEquals"
+       },
+       "leftValue": "={{ $json.base64 }}",
+       "rightValue": "null"
+      }
+     ]
+    }
+   },
+   "typeVersion": 2.2
+  },
+  {
+   "id": "4d2618de-afa5-4610-a503-98c0ed3bb64c",
+   "name": "Generated ?",
+   "type": "n8n-nodes-base.if",
+   "position": [
+    1152,
+    960
+   ],
+   "parameters": {
+    "options": {},
+    "conditions": {
+     "options": {
+      "version": 2,
+      "leftValue": "",
+      "caseSensitive": true,
+      "typeValidation": "strict"
+     },
+     "combinator": "and",
+     "conditions": [
+      {
+       "id": "c4ef96cf-9b59-483e-aa0c-5515ca1d9ad0",
+       "operator": {
+        "type": "string",
+        "operation": "exists",
+        "singleValue": true
+       },
+       "leftValue": "={{ $json.output.intro }}",
+       "rightValue": ""
+      },
+      {
+       "id": "ff6345ad-f2f4-42d2-a31b-06ea0fb46691",
+       "operator": {
+        "type": "string",
+        "operation": "exists",
+        "singleValue": true
+       },
+       "leftValue": "={{ $json.output.text }}",
+       "rightValue": ""
+      }
+     ]
+    }
+   },
+   "typeVersion": 2.2
+  },
+  {
+   "id": "536b05b1-d0e3-40b8-92bc-7bf513311c97",
+   "name": "Sunday 1 AM",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "position": [
+    -496,
+    688
+   ],
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "weeks",
+       "triggerAtHour": 1
+      }
+     ]
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "cacd0862-834e-4818-b80f-41aeb8afdc07",
+   "name": "Gemini 2.5 pro",
+   "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+   "position": [
+    304,
+    928
+   ],
+   "parameters": {
+    "options": {
+     "maxOutputTokens": 5000
+    },
+    "modelName": "models/gemini-2.5-pro"
+   },
+   "credentials": {
+    "googlePalmApi": {
+     "id": "credential-id",
+     "name": "googlePalmApi Credential"
+    }
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "fbd1ffa8-4542-4b02-b982-91e4c744779a",
+   "name": "Loop Over Items",
+   "type": "n8n-nodes-base.splitInBatches",
+   "position": [
+    80,
+    688
+   ],
+   "parameters": {
+    "options": {}
+   },
+   "typeVersion": 3
+  },
+  {
+   "id": "17960683-29d2-4731-b787-878070b179b4",
+   "name": "Reasearch",
+   "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+   "position": [
+    624,
+    1056
+   ],
+   "parameters": {
+    "workflowId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "SrUy5WyflJfrWop0",
+     "cachedResultName": "Helper for SMS"
+    },
+    "description": "This is an AI web scraper (browseract.com). Use this tol to get necessary info needed for the post (eg,- specific tools/sites mentions with details, case studies/proofs with links).\n**Make sure to craft only one optimal search QUERY for the tool**",
+    "workflowInputs": {
+     "value": {
+      "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}"
+     },
+     "schema": [
+      {
+       "id": "query",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "query",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      }
+     ],
+     "mappingMode": "defineBelow",
+     "matchingColumns": [
+      "query"
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    }
+   },
+   "typeVersion": 2.2
+  },
+  {
+   "id": "4a4c40d8-58c7-4412-a7d2-3eb655c1a0b5",
+   "name": "Minimalistic",
+   "type": "n8n-nodes-base.googleDrive",
+   "position": [
+    1392,
+    944
+   ],
+   "parameters": {
+    "fileId": {
+     "__rl": true,
+     "mode": "url",
+     "value": "=https://drive.google.com/file/d/1tyheMfOjGNPeRrsjEXAabLJ8xo6z2ZLC/view?usp=sharing"
+    },
+    "options": {},
+    "operation": "download"
+   },
+   "credentials": {
+    "googleDriveOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleDriveOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 3
+  },
+  {
+   "id": "7507c779-9fa2-4f20-8d98-b113d70e9cdb",
+   "name": "get base64",
+   "type": "n8n-nodes-base.set",
+   "onError": "continueErrorOutput",
+   "position": [
+    2112,
+    928
+   ],
+   "parameters": {
+    "options": {},
+    "assignments": {
+     "assignments": [
+      {
+       "id": "34640f40-66e9-4225-bcad-6f0e882c6a78",
+       "name": "=base64",
+       "type": "string",
+       "value": "={{\n  $json.candidates && $json.candidates[0] && $json.candidates[0].content && $json.candidates[0].content.parts && (\n    ($json.candidates[0].content.parts[1] && $json.candidates[0].content.parts[1].inlineData && $json.candidates[0].content.parts[1].inlineData.data) ||\n    ($json.candidates[0].content.parts[0] && $json.candidates[0].content.parts[0].inlineData && $json.candidates[0].content.parts[0].inlineData.data)\n  )\n}}"
+      }
+     ]
+    }
+   },
+   "typeVersion": 3.4
+  },
+  {
+   "id": "3741fa56-38dc-4283-87cc-884e4ce6ad21",
+   "name": "set base64",
+   "type": "n8n-nodes-base.extractFromFile",
+   "position": [
+    1616,
+    944
+   ],
+   "parameters": {
+    "options": {},
+    "operation": "binaryToPropery"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "cef3cf2b-2ad4-46cc-981d-a3f5876e5ef3",
+   "name": "Convert to File1",
+   "type": "n8n-nodes-base.convertToFile",
+   "position": [
+    2640,
+    896
+   ],
+   "parameters": {
+    "options": {},
+    "operation": "toBinary",
+    "sourceProperty": "base64",
+    "binaryPropertyName": "image"
+   },
+   "typeVersion": 1.1
+  },
+  {
+   "id": "e97caa8a-a037-4a65-9612-3432c3e451ce",
+   "name": "Get Viral Ideas",
+   "type": "n8n-nodes-base.googleSheets",
+   "position": [
+    -320,
+    688
+   ],
+   "parameters": {
+    "options": {},
+    "filtersUI": {
+     "values": [
+      {
+       "lookupValue": "Ready",
+       "lookupColumn": "Validity Status"
+      }
+     ]
+    },
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": 393798908,
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk/edit#gid=393798908",
+     "cachedResultName": "Viral Ideas"
+    },
+    "documentId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14yeNCC9M7SHN0XG8hgXxCSh9rDkzg_ywIlu_GcZgUu8/edit?usp=drivesdk",
+     "cachedResultName": "Content Automation"
+    }
+   },
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleSheetsOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 4.5,
+   "alwaysOutputData": false
+  },
+  {
+   "id": "cec2333a-ef6d-44a4-a68d-5b63125f7b82",
+   "name": "HTTP- Gemini",
+   "type": "n8n-nodes-base.httpRequest",
+   "onError": "continueErrorOutput",
+   "position": [
+    1824,
+    944
+   ],
+   "parameters": {
+    "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent",
+    "method": "POST",
+    "options": {},
+    "jsonBody": "={\n    \"contents\": [\n        {\n            \"parts\": [\n                {\n                    \"text\": {{ JSON.stringify($('Post repurpose').item.json.output.image_description) }}\n                },\n                {\n                    \"inlineData\": {\n                        \"mimeType\": \"image/png\",\n                        \"data\": {{ JSON.stringify($json.data) }}\n                    }\n                }\n            ]\n        }\n    ],\n    \"generationConfig\": {\n        \"responseModalities\": [\n            \"TEXT\",\n            \"IMAGE\"\n        ]\n    }\n}",
+    "sendBody": true,
+    "specifyBody": "json",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "googlePalmApi"
+   },
+   "credentials": {
+    "googlePalmApi": {
+     "id": "credential-id",
+     "name": "googlePalmApi Credential"
+    }
+   },
+   "retryOnFail": false,
+   "typeVersion": 4.2,
+   "waitBetweenTries": 5000
+  },
+  {
+   "id": "161f5bbe-fd2f-434e-a401-09d8790f9135",
+   "name": "Post repurpose",
+   "type": "@n8n/n8n-nodes-langchain.agent",
+   "position": [
+    528,
+    784
+   ],
+   "parameters": {
+    "text": "=Here's' the viral post that you need to repurpose with my tone-\n```\n{{ JSON.stringify($json.Source_Content) }}\n```\n\n**Make sure to twist some part/point of the source content without changing the context.**\n**Include proper spaces, new lines, bullets and other punctuations rather than generic paragraph style.**\n\nMinimalistic image this time.\nBegin:",
+    "options": {
+     "systemMessage": "=# ROLE:\nYou're an expert in viral LinkedIn posts content creatior with 10 years of experience. You've created/ repurposed viral posts that have gotten 10 billion views in total.\n\n# SCENARIO:\nI run a LinkedIn blog (my PB) about AI Automation (basics to advanced topics of AI agents/ automation/ no-code, low-code tools).\n\nMy audience: AI enthusiasts, AI learners, founders, B2B business owners, and brands.  \n\nMy goals:\n- Teach them practical AI automation concepts.\n- Inspire/guide them to build AI solutions that reduce costs, save time, and increase efficiency.\n- Deliver value in a way that’s shareable and engaging.\n\n\n# MY CONTENT BUCKETS\n\n- AI Automation Basics – simplify concepts of AI agents, automation, no-code/low-code tools.\n- Real Implementations – workflows and solutions with clear business value (time saved, sales increased, costs reduced).\n- Case Studies – breakdowns of AI solutions with proven ROI. Must include verifiable proof/links; otherwise skip this bucket.\n- Future & Trends – new AI developments, ethical aspects, future predictions (proven).\n\nEach post must clearly belong to one bucket.\n\n\n# YOUR WORK\nYou'll get a viral LinkedIn post as an input.\n\n- Analize the given viral post thoroughly.\n- Repurpose into a 200–300 word LinkedIn post.\n\n- **Output in this structure:**\n{\n \"intro\": \"\",   // first sentence <80 chars, value-driven\n \"text\": \"\",    // main post, 200–300 words\n \"image_description\": \"\"  // minimalistic, very clear for image generation\n}\n---\n\n## Rules:\n- Select the best matching content bucket.\n- **Rewrite fully — no copying phrases.**\n- Add a brief, cold CTA at the end.\n- Maintain expert yet approachable tone with storytelling (no first person perspective).\n\n\n## SPECIFICS:\nThis task is crucial for building an authentic connection with my audience while delivering practical AI knowledge they can immediately apply.\n\n- I deeply value your storytelling expertise to transform technical content into engaging narratives that inspire action without being salesy.\n- Please ensure the storytelling approach maintains technical accuracy and educational integrity - the narrative should enhance the value, not replace it.\n\n- Never use generic phrases like: “Stop doing X”, “X is dead”, “I made this”, “DM me”.\n- May use reflective honesty (e.g., “I struggled with this too”, \"I learnt\", else) ONLY when necessary.\n- **Include Links of the Source Post** whenever necessary (eg,- some sites, else) to show proof/data.\n- **Use RESEARCH TOOL only when proof/links are required (e.g., case studies, data).**\n- If no research needed, rely on reasoning.\n\n\n## IMAGE PROMPT GUIDE:\n- Background: black/dark, grainy film.\n- Minimalistic design.\n- Include descriptive visual details, avoid text unless essential.\n---\n\n# EXAMPLE:\n\n## Example Input:\n\"For years I wasted hours every day on manual lead gen. Then I built this AI system that now does it all for me:\\n\\n1️⃣ DATA COLLECTION\\n- Custom bots scrape LinkedIn & company websites\\n- Pulls emails and phone numbers automatically\\n\\n2️⃣ LEAD SCORING\\n- AI analyzes 20+ signals like job changes and funding rounds\\n- Rates prospects from A (hot) to D (cold)\\n\\n3️⃣ PERSONALIZED OUTREACH\\n- Generates unique messages for each lead\\n- References their recent posts/work anniversaries\\n\\n4️⃣ FOLLOW-UP SYSTEM\\n- Automatically sends 5-touch sequences\\n- Only continues conversations with engaged leads\\n\\nTech Stack:\\n• Scraping: PhantomBuster\\n• AI: Custom GPT-4 agents\\n• Workflow: Zapier\\n• CRM: Pipedrive\\n\\nResults:\\n- 300+ qualified leads/month\\n- 6 hours saved daily\\n- 25% higher reply rates\\n\\nWant me to build this for you? Comment 'AUTOMATE' below!\\n\\n#SalesAutomation #AIforBusiness\"\n\n## Example output:\n{\n \"intro\": \"Manual lead generation is not optimal now. Here's the exact workflow that generates and qualifies leads using AI - works while saving 50h+/week\",\n \"text\": \"🔧 STEP 1: Data Harvesting\\n- AI scrapes LinkedIn/websites/other platforms or even google maps for Ideal Customer Profiles (using apify)\\n- Extracts emails/contact info from OSINT.\\n\\n🎯 STEP 2: Intent Filtering\\n- Analyzes social activity for buying signals, checks job title/seniority, checks for recent fundings. \\n- Scores leads using 15+ engagement metrics\\n\\n✍️ STEP 3: Hyper-Personalization\\n- Generates custom icebreakers using prospect's content\\n- References mutual connections/recent achievements\\n\\n🤖 STEP 4: Multi-Channel Outreach\\n- Sends sequenced emails/LinkedIn messages\\n- Auto-follows based on engagement triggers\\n\\n📥 STEP 5: CRM Handoff\\n- Qualifies hot leads using conversation analysis\\n- Pushes ready-to-buy leads to sales team (via slack)\\n\\nThis isn't theory - it runs on:\\n▸ Scraping: Apify\\n▸ AI Agents: ChatGPT + Autogen\\n▸ Workflow: n8n\\n▸ CRM: HubSpot/GHL\\n\\nThe result? 200+ qualified leads/month with few manual work.\\n\\nYour thoughts about this system?👇 ⬇️\\n\\n#AIAutomation #LeadGeneration #B2BSales\",\n \"image_description\": \"MINIMALISTIC: Dark cosmic background with glowing digital network lines. Five connected neon nodes (blue/purple) forming workflow: 1) Data cube, 2) Filter icon, 3) Personalization spark, 4) Message bubbles, 5) CRM dashboard. Clean white arrows showing flow direction. Central AI brain core emitting light pulses.\"\n}\n---\n\n\n# IMPORTANT\n\n### Do not:\n- Claim authorship (eg,- “I built”, “my system”).\n- Add affiliate/promo links.\n- Use salesy CTAs (eg,- “Comment X for template”).\n\n### Do:\n- Show data or proof when available (eg,- \"Data shows 200+ leads/mon\", \"Morningside.ai implemented for 12 SaaS clients {source_link}\").\n- Engage authentically (eg,- “Your thoughts?👇”/ \"Any suggestions?\").\n- Keep tone 100% educational, zero salesy.\n- **Include technical details, tools, or metrics where relevant.**\n\n**Always possition as an honest, veteran builder + mentor**\n\n**Examples:**  \nWeak → \"I built this - comment 'BOT' for free setup!\"  \nStrong → \"500 leads/mo processed. Any suggestions? 👇\""
+    },
+    "promptType": "define",
+    "needsFallback": true,
+    "hasOutputParser": true
+   },
+   "typeVersion": 2.1
+  },
+  {
+   "id": "793342ce-0874-4c77-96ba-324b5601074b",
+   "name": "Save Post",
+   "type": "n8n-nodes-base.googleSheets",
+   "position": [
+    3216,
+    1056
+   ],
+   "parameters": {
+    "columns": {
+     "value": {
+      "image": "={{ $json.image }}",
+      "status": "Waiting",
+      "image id": "={{ $json.id }}",
+      "Source url": "={{ $('Loop Over Items').item.json.Source_URL }}",
+      "Source content": "={{ $('Loop Over Items').item.json.Source_Content }}",
+      "Generated Content": "={{ $json.content }}"
+     },
+     "schema": [
+      {
+       "id": "Generated Content",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "Generated Content",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "image",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "image",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "status",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "status",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Date",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Date",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Time",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Time",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Source content",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "Source content",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Source url",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "Source url",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "image id",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "image id",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      }
+     ],
+     "mappingMode": "defineBelow",
+     "matchingColumns": [],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {
+     "useAppend": true
+    },
+    "operation": "append",
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": "gid=0",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk/edit#gid=0",
+     "cachedResultName": "Content Gen (LinkedIn)"
+    },
+    "documentId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14yeNCC9M7SHN0XG8hgXxCSh9rDkzg_ywIlu_GcZgUu8/edit?usp=drivesdk",
+     "cachedResultName": "Social Post Automation"
+    }
+   },
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleSheetsOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 4.5
+  },
+  {
+   "id": "fb68d656-d141-43bd-aa6e-776ec98357be",
+   "name": "Save Image",
+   "type": "n8n-nodes-base.googleDrive",
+   "position": [
+    2848,
+    912
+   ],
+   "parameters": {
+    "name": "={{ $('Post repurpose').item.json.output.image_description.slice(50,80).trim() }}",
+    "driveId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "My Drive"
+    },
+    "options": {},
+    "folderId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "1XHmqATjkpAXNxhgTGEtR6ACFwhJNMRQ-",
+     "cachedResultUrl": "https://drive.google.com/drive/YOUR_AWS_SECRET_KEY_HERE-",
+     "cachedResultName": "Social Post automation (n8n)"
+    },
+    "inputDataFieldName": "image"
+   },
+   "credentials": {
+    "googleDriveOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleDriveOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 3
+  },
+  {
+   "id": "61913145-c69e-4eef-9717-f7008ceeb91a",
+   "name": "Structured Output Parser",
+   "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+   "position": [
+    784,
+    976
+   ],
+   "parameters": {
+    "autoFix": true,
+    "jsonSchemaExample": "{\n    \"intro\": \"intro\",\n    \"text\": \"text\",\n    \"image_description\": \"image\"\n}"
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "7a74a039-d59d-434b-918f-c53c26a57c53",
+   "name": "Sticky Note7",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -992,
+    304
+   ],
+   "parameters": {
+    "color": 5,
+    "width": 2164,
+    "height": 96,
+    "content": "# System 3: Generate New Post from viral posts"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "aed48d5f-e719-4937-9e81-7529bc8d5fe6",
+   "name": "Sticky Note3",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -352,
+    528
+   ],
+   "parameters": {
+    "width": 576,
+    "height": 320,
+    "content": "## Fetch Viral Post Ideas 📥\nGrabs all rows from the 'Viral Ideas' Google Sheet where the status is 'Ready'.\n\nLoops through each idea one by one for processing."
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "0506f9a6-bdbe-467e-af8b-018122862532",
+   "name": "Sticky Note9",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    3856,
+    480
+   ],
+   "parameters": {
+    "color": 5,
+    "width": 1908,
+    "height": 144,
+    "content": "# Generate New Post from user's idea\nThis is a seperate workflow. \nAdd a`  When executed by another workflow  ` trigger node at the beginning\nThis will execute when the user sends a post idea via telegram (text)"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "fb8fd38f-aad7-4f05-8125-8f0d8c4aeb1f",
+   "name": "Structured Output Parser1",
+   "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+   "position": [
+    4448,
+    944
+   ],
+   "parameters": {
+    "autoFix": true,
+    "jsonSchemaExample": "{\n    \"intro\": \"intro\",\n    \"text\": \"text\",\n    \"image_description\": \"image\"\n}"
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "b7979c8a-6ab8-4555-9017-52126c249ac8",
+   "name": "HTTP- Gemini1",
+   "type": "n8n-nodes-base.httpRequest",
+   "onError": "continueErrorOutput",
+   "maxTries": 2,
+   "position": [
+    5200,
+    832
+   ],
+   "parameters": {
+    "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent",
+    "method": "POST",
+    "options": {},
+    "jsonBody": "={\n    \"contents\": [\n        {\n            \"parts\": [\n                {\n                    \"text\": {{ JSON.stringify($('Post generator').item.json.output.image_description) }}\n                },\n                {\n                    \"inlineData\": {\n                        \"mimeType\": \"image/png\",\n                        \"data\": {{ JSON.stringify($json.data) }}\n                    }\n                }\n            ]\n        }\n    ],\n    \"generationConfig\": {\n        \"responseModalities\": [\n            \"TEXT\",\n            \"IMAGE\"\n        ]\n    }\n}",
+    "sendBody": true,
+    "specifyBody": "json",
+    "authentication": "predefinedCredentialType",
+    "nodeCredentialType": "googlePalmApi"
+   },
+   "credentials": {
+    "googlePalmApi": {
+     "id": "credential-id",
+     "name": "googlePalmApi Credential"
+    }
+   },
+   "retryOnFail": true,
+   "typeVersion": 4.2,
+   "waitBetweenTries": 5000
+  },
+  {
+   "id": "94205b1c-1788-475c-8b41-d95a55c2d1cb",
+   "name": "Convert to File2",
+   "type": "n8n-nodes-base.convertToFile",
+   "position": [
+    5888,
+    816
+   ],
+   "parameters": {
+    "options": {},
+    "operation": "toBinary",
+    "sourceProperty": "base64",
+    "binaryPropertyName": "image"
+   },
+   "typeVersion": 1.1
+  },
+  {
+   "id": "3fc3eb82-2e0a-4d7a-9714-cd0f2c615558",
+   "name": "set base",
+   "type": "n8n-nodes-base.extractFromFile",
+   "position": [
+    4976,
+    832
+   ],
+   "parameters": {
+    "options": {},
+    "operation": "binaryToPropery"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "b57a79b5-7452-4a39-98a1-7a42a31e8329",
+   "name": "get base",
+   "type": "n8n-nodes-base.set",
+   "position": [
+    5424,
+    832
+   ],
+   "parameters": {
+    "options": {},
+    "assignments": {
+     "assignments": [
+      {
+       "id": "34640f40-66e9-4225-bcad-6f0e882c6a78",
+       "name": "=base64",
+       "type": "string",
+       "value": "={{\n  $json.candidates && $json.candidates[0] && $json.candidates[0].content && $json.candidates[0].content.parts && (\n    ($json.candidates[0].content.parts[1] && $json.candidates[0].content.parts[1].inlineData && $json.candidates[0].content.parts[1].inlineData.data) ||\n    ($json.candidates[0].content.parts[0] && $json.candidates[0].content.parts[0].inlineData && $json.candidates[0].content.parts[0].inlineData.data)\n  )\n}}"
+      }
+     ]
+    }
+   },
+   "typeVersion": 3.4
+  },
+  {
+   "id": "3f24cf47-7acd-4674-badb-89f40ca56bf5",
+   "name": "Minimalistic1",
+   "type": "n8n-nodes-base.googleDrive",
+   "position": [
+    4752,
+    832
+   ],
+   "parameters": {
+    "fileId": {
+     "__rl": true,
+     "mode": "url",
+     "value": "=https://drive.google.com/file/d/1tyheMfOjGNPeRrsjEXAabLJ8xo6z2ZLC/view?usp=sharing"
+    },
+    "options": {},
+    "operation": "download"
+   },
+   "credentials": {
+    "googleDriveOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleDriveOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 3
+  },
+  {
+   "id": "181132d2-bba9-4503-af10-d95b7378650f",
+   "name": "Reasearch1",
+   "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+   "position": [
+    4272,
+    1056
+   ],
+   "parameters": {
+    "workflowId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "SrUy5WyflJfrWop0",
+     "cachedResultName": "Helper for SMS"
+    },
+    "description": "This is an AI web scraper (browseract.com). Use this tool to get necessary info needed for the post (eg,- specific tools/sites mentions with details, case studies/proofs with links).\n**Make sure to craft noly one optimal search QUERY for the tool**",
+    "workflowInputs": {
+     "value": {
+      "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}"
+     },
+     "schema": [
+      {
+       "id": "query",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "query",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      }
+     ],
+     "mappingMode": "defineBelow",
+     "matchingColumns": [
+      "query"
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    }
+   },
+   "typeVersion": 2.2
+  },
+  {
+   "id": "76edeac6-cda5-4b19-9be9-912f4eeb497d",
+   "name": "Post generator",
+   "type": "@n8n/n8n-nodes-langchain.agent",
+   "position": [
+    4192,
+    720
+   ],
+   "parameters": {
+    "text": "=Here's the user query/idea that you need to generate a viral post with your own tone-\n```\n{{ $json.message.text.split(\":\")[1].trim() }}\n```\n\nChoose the optimal Content Bucket and Image Style according to the post.\nCome up with a new, super valuable and concrete post.\nMinimalistic image this time.\nBegin:",
+    "options": {
+     "systemMessage": "=# ROLE:\nYou're an expert in viral LinkedIn posts content creatior with 10 years of experience. You've created viral posts that have gotten 10 billion views in total.\n\n# SCENARIO:\nI run a LinkedIn blog (my PB) about AI Automation (basics to advanced topics of AI agents/ automation/ no-code, low-code tools).\n\nMy audience: AI enthusiasts, AI learners, founders, B2B business owners, and brands.  \n\nMy goals:\n- Teach them practical AI automation concepts.\n- Inspire/guide them to build AI solutions that reduce costs, save time, and increase efficiency.\n- Deliver value in a way that’s shareable and engaging.\n\n\n# MY CONTENT BUCKETS\n\n- AI Automation Basics – simplify concepts of AI agents, automation, no-code/low-code tools.\n- Real Implementations – workflows and solutions with clear business value (time saved, sales increased, costs reduced).\n- Case Studies – breakdowns of AI solutions with proven ROI. Must include verifiable proof/links; otherwise skip this bucket.\n- Future & Trends – new AI developments, ethical aspects, future predictions (proven).\n\nEach post must clearly belong to one bucket.\n\n\n# YOUR WORK\nYou'll get a LinkedIn post Idea as an input.\n\n- Analize the given post idea thoroughly.\n- Generate a 200–300 word LinkedIn post.\n\n- **Output in this structure:**\n{\n \"intro\": \"\",   // first sentence <80 chars, value-driven\n \"text\": \"\",    // main post, 200–300 words\n \"image_description\": \"\"  // minimalistic, very clear for image generation\n}\n---\n\n## Rules:\n- Select the best matching content bucket.\n- Rewrite fully — no copying phrases.\n- Include technical details, tools, or metrics where relevant.\n- Add a brief, cold CTA at the end (eg,- \"Your thoughts? 👇\".)\n- Maintain expert yet approachable tone.\n- For case studies, only include claims backed by sources/links.\n\n\n## IMAGE PROMPT GUIDE\n- Background: black, dark, grainy film.\n- Minimalistic design.\n- Include descriptive visual details, avoid text unless essential.\n\n\n## CONSIDERATIONS\n- Use knowledge only; no fluff.\n- Never use phrases like: “Stop doing X”, “X is dead”, “I made this”, “DM me”.\n- May use reflective honesty (e.g., “I struggled with this too”, \"I learnt\", else) ONLY when necessary.\n- **Include Links** whenever necessary (eg,- some sites, else) to show proof/data.\n- **Use RESEARCH TOOL only when proof/links are required (e.g., case studies, data).**\n- If no research needed, rely on reasoning.\n---\n\n# EXAMPLE:\n\n## Example Input:\n\"Lead gen AI automation\"\n\n## Example output:\n{\n \"intro\": \"Manual lead generation is not optimal now. Here's the exact workflow that generates and qualifies leads using AI - works while you sleep\",\n \"text\": \"🔧 STEP 1: Data Harvesting\\n- AI scrapes LinkedIn/websites/other platforms or even google maps for Ideal Customer Profiles (using apify)\\n- Extracts emails/contact info from OSINT.\\n\\n🎯 STEP 2: Intent Filtering\\n- Analyzes social activity for buying signals, checks job title/seniority, checks for recent fundings. \\n- Scores leads using 15+ engagement metrics\\n\\n✍️ STEP 3: Hyper-Personalization\\n- Generates custom icebreakers using prospect's content\\n- References mutual connections/recent achievements\\n\\n🤖 STEP 4: Multi-Channel Outreach\\n- Sends sequenced emails/LinkedIn messages\\n- Auto-follows based on engagement triggers\\n\\n📥 STEP 5: CRM Handoff\\n- Qualifies hot leads using conversation analysis\\n- Pushes ready-to-buy leads to sales team (via slack)\\n\\nThis isn't theory - it runs on:\\n▸ Scraping: Apify\\n▸ AI Agents: ChatGPT + Autogen\\n▸ Workflow: n8n\\n▸ CRM: HubSpot/GHL\\n\\nThe result? 200+ qualified leads/month with 1/4 manual work.\\n\\nYour thoughts on this system?👇 ⬇️\\n\\n#AIAutomation #LeadGeneration #B2BSales\",\n \"image_description\": \"MINIMALISTIC: Dark cosmic background with glowing digital network lines. Five connected neon nodes (blue/purple) forming workflow: 1) Data cube, 2) Filter icon, 3) Personalization spark, 4) Message bubbles, 5) CRM dashboard. Clean white arrows showing flow direction. Central AI brain core emitting light pulses.\"\n}\n---\n\n# IMPORTANT\n\n### Do not:\n- Claim authorship (eg,- “I built”, “my system”).\n- Add affiliate/promo links.\n- Use salesy CTAs (eg,- “Comment X for template”).\n\n### Do:\n- Show data or proof when available (eg,- \"Data shows 200+ leads/mo\", \"Morningside.ai implemented for 12 SaaS clients {source_link}\").\n- Engage authentically (eg,- “Your thoughts?👇”/ \"Any suggestions?\").\n- Keep tone 100% educational, zero salesy.\n- Make twists, maintain context. My post must not seem to be copied. \n\n**Always possition as an honest, veteran builder + mentor**\n\n**Examples:**  \nWeak → \"I built this - comment 'BOT' for free setup!\"  \nStrong → \"500 leads/mo processed. Any suggestions? 👇\""
+    },
+    "promptType": "define",
+    "needsFallback": true,
+    "hasOutputParser": true
+   },
+   "typeVersion": 2.1
+  },
+  {
+   "id": "8f57c916-3b48-4002-80eb-ca25b5917827",
+   "name": "Send post",
+   "type": "n8n-nodes-base.telegram",
+   "position": [
+    4976,
+    1104
+   ],
+   "webhookId": "eb752f40-2bda-4e78-a0bc-ac625a2dbbd3",
+   "parameters": {
+    "text": "=Generated post content from your idea.\nPlease have a look:\n---\n\n{{ $json.output.hook }}\n\n{{ $json.output.text }}",
+    "chatId": "=",
+    "additionalFields": {
+     "appendAttribution": false
+    }
+   },
+   "credentials": {
+    "telegramApi": {
+     "id": "credential-id",
+     "name": "telegramApi Credential"
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "324e25a7-658f-4338-81bc-ff273004aa4b",
+   "name": "Deepseek2",
+   "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+   "position": [
+    4128,
+    960
+   ],
+   "parameters": {
+    "model": "deepseek/deepseek-chat-v3-0324:free",
+    "options": {}
+   },
+   "credentials": {
+    "openRouterApi": {
+     "id": "credential-id",
+     "name": "openRouterApi Credential"
+    }
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "d8a5ceb7-c1b8-4cc0-9798-e544accf31c3",
+   "name": "Gemini 2.5 pro1",
+   "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+   "position": [
+    4432,
+    1152
+   ],
+   "parameters": {
+    "options": {},
+    "modelName": "models/gemini-2.5-pro"
+   },
+   "credentials": {
+    "googlePalmApi": {
+     "id": "credential-id",
+     "name": "googlePalmApi Credential"
+    }
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "d39bdbee-657a-4a05-8149-e45f0cff9fa0",
+   "name": "Send image",
+   "type": "n8n-nodes-base.telegram",
+   "position": [
+    6080,
+    816
+   ],
+   "webhookId": "25c2fac2-9bdf-4347-8f64-6fee99fec7f2",
+   "parameters": {
+    "operation": "sendDocument",
+    "binaryData": true,
+    "additionalFields": {},
+    "binaryPropertyName": "image"
+   },
+   "credentials": {
+    "telegramApi": {
+     "id": "credential-id",
+     "name": "telegramApi Credential"
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "34e0076f-2b3a-4b8f-92dc-9aa549eccd07",
+   "name": "Pic exist?1",
+   "type": "n8n-nodes-base.if",
+   "position": [
+    5632,
+    832
+   ],
+   "parameters": {
+    "options": {},
+    "conditions": {
+     "options": {
+      "version": 2,
+      "leftValue": "",
+      "caseSensitive": true,
+      "typeValidation": "strict"
+     },
+     "combinator": "and",
+     "conditions": [
+      {
+       "id": "ce416ffb-2192-42a2-9d36-2054ce0e3ce8",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       },
+       "leftValue": "={{ $json.base64 }}",
+       "rightValue": ""
+      },
+      {
+       "id": "7d6bf747-7fd6-4f3b-ad63-68322cd71469",
+       "operator": {
+        "type": "string",
+        "operation": "notEquals"
+       },
+       "leftValue": "={{ $json.base64 }}",
+       "rightValue": "null"
+      }
+     ]
+    }
+   },
+   "typeVersion": 2.2
+  },
+  {
+   "id": "44a1a5e0-a1c4-4730-9eec-dc9721ff3f1e",
+   "name": "no pic",
+   "type": "n8n-nodes-base.telegram",
+   "position": [
+    5872,
+    1056
+   ],
+   "webhookId": "eb752f40-2bda-4e78-a0bc-ac625a2dbbd3",
+   "parameters": {
+    "text": "=Couldn't generate a pic for the post.",
+    "chatId": "=",
+    "additionalFields": {
+     "appendAttribution": false
+    }
+   },
+   "credentials": {
+    "telegramApi": {
+     "id": "credential-id",
+     "name": "telegramApi Credential"
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "a5a62673-3338-4bff-a3ee-94ac8956e2a6",
+   "name": "Get content",
+   "type": "n8n-nodes-base.googleSheets",
+   "position": [
+    -128,
+    2112
+   ],
+   "parameters": {
+    "options": {},
+    "filtersUI": {
+     "values": [
+      {
+       "lookupValue": "Posted",
+       "lookupColumn": "status"
+      }
+     ]
+    },
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": "gid=0",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk/edit#gid=0",
+     "cachedResultName": "Content Gen (LinkedIn)"
+    },
+    "documentId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14yeNCC9M7SHN0XG8hgXxCSh9rDkzg_ywIlu_GcZgUu8/edit?usp=drivesdk",
+     "cachedResultName": "Social Post Automation"
+    }
+   },
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleSheetsOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 4.6
+  },
+  {
+   "id": "c6d83820-e191-40bd-bb40-0690c6263648",
+   "name": "Content repurpose",
+   "type": "@n8n/n8n-nodes-langchain.chainLlm",
+   "onError": "continueErrorOutput",
+   "position": [
+    624,
+    2240
+   ],
+   "parameters": {
+    "text": "=This is the post content to repurpose for X.\nFocus on instant value:\nRecheck if the character count is <=280:\n\n{{ $json.Content }}",
+    "batching": {},
+    "messages": {
+     "messageValues": [
+      {
+       "message": "=# ROLE:\nYou're an expert in viral X (twitter) content generator with 10 years of experience. You've repurposed viral posts that have gotten 10 billion views in total.\n\n# SCENARIO:\nI'll provide a long post CONTENT (as an INPUT) about AI Automation (basics to advanced topics of AI agents/ automation/ no-code, low-code tools). My audience is AI enthusiasts, salespeople, founders, B2B business owners, brands. My goal is to teach them about AI Automations/ AI agents etc. I also aim to help them build AI solutions/ automations that actually reduce costs, save time, increase efficiency. \n---\n\n# YOUR WORK:\n- Read the provided post content thoroughly.\n- You need to repurpose the post content for my X handle.\n\n- Follow X best practices for viral threads:\n  - Write one optimal short, punchy post **(max 280 characters)**.\n  - May create a post just by including necessary points/data (if optimal).\n  - No need to include everything (from the original post), rather write something (related to the provided input) for instant value.\n\n- Maintain a consistent style:\n - Informative + approachable tone.\n - Conversational, not academic (but still professional).\n\n- OPTIONAL (if character count allows):\n - Use 2–3 relevant hashtags.\n - End with a short, cold CTA (e.g., “Your thoughts? 👇”, “Lemme know 👇”).\n\nFocus on clarity, shareability, and instant value.\n---\n\n## OUTPUT FORMAT:\n{\n \"post\": \"\"\n}\n---\n\n# IMPORTANT:\n\n- **Never exceed character limit of 280 characters.**\n- **Remember: Emojis, CJK chars, \"•\" are counted as 2 characters. Be careful if using those**\n- Try to include most of the *Most Vital Points/Data* in the outputs.\n- Never use hooks or generic words (eg- Stop doing..., Tired of... etc.). Rather focus on value only.\n- **Try not to use first person perspective (eg- \"I built...\", \"My solution\") - Instead use a general, educational tone (eg- \"This system...\", \"The solution\")**.\n- May use reflective honesty (eg,- \"I also did the mistake\") ONLY when possible.\n- **Output only in the specified format and nothing else.**"
+      },
+      {
+       "type": "AIMessagePromptTemplate",
+       "message": "=#EXAMPLE:\n\n## Example Input:\n{\n  \"hook\": \"Manual lead generation is dead. Here's the exact workflow that generates and qualifies leads using AI - works while you sleep.\\n\\n🔧 STEP 1: Data Harvesting\\n- AI scrapes LinkedIn/websites/other platforms or even google maps for Ideal Customer Profiles (using apify)\\n- Extracts emails/contact info from OSINT.\\n\\n🎯 STEP 2: Intent Filtering\\n- Analyzes social activity for buying signals, checks job title/seniority, checks for recent fundings. \\n- Scores leads using 15+ engagement metrics\\n\\n✍️ STEP 3: Hyper-Personalization\\n- Generates custom icebreakers using prospect's content\\n- References mutual connections/recent achievements\\n\\n🤖 STEP 4: Multi-Channel Outreach\\n- Sends sequenced emails/LinkedIn messages\\n- Auto-follows based on engagement triggers\\n\\n📥 STEP 5: CRM Handoff\\n- Qualifies hot leads using conversation analysis\\n- Pushes ready-to-buy leads to sales team (via slack)\\n\\nThis isn't theory - it runs on:\\n▸ Scraping: Apify\\n▸ AI Agents: ChatGPT + Autogen\\n▸ Workflow: n8n\\n▸ CRM: HubSpot/GHL\\n\\nThe result? 200+ qualified leads/month with almost zero manual work (Human-in-the-Loop is crucial here).\\n\\nWhen you're gonna implement AI in your business? ⬇️\\n\\n#AIAutomation #LeadGeneration #B2BSales\"\n}\n\n## Example output:\n{\n  \"post\": \"I never go for manual lead gen.\\n\\nMy AI agent can:\\nScrape ICPs from LinkedIn/web/Google Maps (Apify)\\nFilter by buying intent & score w/ 15+ metrics\\nAuto-personalize icebreakers\\nRun omni-channel outreach\\nPush hot leads to CRM\\n\\n200+ leads/mo.\\nHuman-in-the-Loop is crucial.\"\n}\n"
+      }
+     ]
+    },
+    "promptType": "define",
+    "needsFallback": true,
+    "hasOutputParser": true
+   },
+   "typeVersion": 1.7,
+   "alwaysOutputData": false
+  },
+  {
+   "id": "5ccb4770-78b7-4894-a283-7b8cedecf091",
+   "name": "Append post",
+   "type": "n8n-nodes-base.googleSheets",
+   "position": [
+    1584,
+    2256
+   ],
+   "parameters": {
+    "columns": {
+     "value": {
+      "Status": "Waiting",
+      "X post": "={{ $json.x_post }}",
+      "X image": "={{ $('Edit Fields5').item.json.image }}",
+      "Main Content (LinkedIn)": "={{ $('Edit Fields5').item.json.Content }}"
+     },
+     "schema": [
+      {
+       "id": "Main Content (LinkedIn)",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "Main Content (LinkedIn)",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "X post",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "X post",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "X image",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "X image",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Image Validity",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Image Validity",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Status",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "Status",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "X post Date",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "X post Date",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      }
+     ],
+     "mappingMode": "defineBelow",
+     "matchingColumns": [
+      "Main Content (LinkedIn)"
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {},
+    "operation": "appendOrUpdate",
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": 1296602811,
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk/edit#gid=1296602811",
+     "cachedResultName": "Other handles"
+    },
+    "documentId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14yeNCC9M7SHN0XG8hgXxCSh9rDkzg_ywIlu_GcZgUu8/edit?usp=drivesdk",
+     "cachedResultName": "Social Post Automation"
+    }
+   },
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleSheetsOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 4.6
+  },
+  {
+   "id": "bb079338-af29-455e-b000-e90d1ce51cde",
+   "name": "All Done",
+   "type": "n8n-nodes-base.googleSheets",
+   "position": [
+    1792,
+    2256
+   ],
+   "parameters": {
+    "columns": {
+     "value": {
+      "status": "All Done",
+      "Generated Content": "={{ $('Edit Fields5').item.json.Content }}"
+     },
+     "schema": [
+      {
+       "id": "Generated Content",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "Generated Content",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "image",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "image",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "status",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "status",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Date",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Date",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Time",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Time",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Source content",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Source content",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Source url",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Source url",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "image id",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "image id",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "row_number",
+       "type": "number",
+       "display": true,
+       "removed": true,
+       "readOnly": true,
+       "required": false,
+       "displayName": "row_number",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      }
+     ],
+     "mappingMode": "defineBelow",
+     "matchingColumns": [
+      "Generated Content"
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {},
+    "operation": "update",
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": "gid=0",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk/edit#gid=0",
+     "cachedResultName": "Content Gen (LinkedIn)"
+    },
+    "documentId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14yeNCC9M7SHN0XG8hgXxCSh9rDkzg_ywIlu_GcZgUu8/edit?usp=drivesdk",
+     "cachedResultName": "Social Post Automation (SMS)"
+    }
+   },
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleSheetsOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 4.7
+  },
+  {
+   "id": "b442fe57-4deb-48b4-a48c-e19bf3aa871d",
+   "name": "Gemini pro",
+   "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+   "position": [
+    496,
+    2464
+   ],
+   "parameters": {
+    "options": {},
+    "modelName": "models/gemini-2.5-pro"
+   },
+   "credentials": {
+    "googlePalmApi": {
+     "id": "credential-id",
+     "name": "googlePalmApi Credential"
+    }
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "1c035513-c4ba-48ce-9a75-bd511814331a",
+   "name": "Sunday 7am",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "position": [
+    -336,
+    2112
+   ],
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "weeks",
+       "triggerAtHour": 7
+      }
+     ]
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "ac048865-1169-48f1-b854-5ef2aa913b4f",
+   "name": "Edit Fields5",
+   "type": "n8n-nodes-base.set",
+   "position": [
+    352,
+    2224
+   ],
+   "parameters": {
+    "options": {},
+    "assignments": {
+     "assignments": [
+      {
+       "id": "71995d95-3674-4e03-b11e-4bae79db2851",
+       "name": "Content",
+       "type": "string",
+       "value": "={{ $json['Generated Content'] }}"
+      },
+      {
+       "id": "2a8e94ab-1f55-431a-acbd-20354ce28306",
+       "name": "image",
+       "type": "string",
+       "value": "={{ $json.image }}"
+      }
+     ]
+    }
+   },
+   "typeVersion": 3.4
+  },
+  {
+   "id": "3c5333c8-0a79-4cf6-9560-e397de5171df",
+   "name": "Structured Output Parser2",
+   "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+   "position": [
+    912,
+    2432
+   ],
+   "parameters": {
+    "autoFix": true,
+    "jsonSchemaExample": "{\n \"post\": \"\"\n}"
+   },
+   "typeVersion": 1.3
+  },
+  {
+   "id": "d469f913-c817-4c7d-812f-425db95391bc",
+   "name": "Deepseek3",
+   "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+   "position": [
+    672,
+    2480
+   ],
+   "parameters": {
+    "model": "deepseek/deepseek-chat-v3-0324:free",
+    "options": {}
+   },
+   "credentials": {
+    "openRouterApi": {
+     "id": "credential-id",
+     "name": "openRouterApi Credential"
+    }
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "03ab1efe-3fec-4ff2-9163-03b467291592",
+   "name": "Edit Fields6",
+   "type": "n8n-nodes-base.set",
+   "position": [
+    1360,
+    2224
+   ],
+   "parameters": {
+    "options": {},
+    "assignments": {
+     "assignments": [
+      {
+       "id": "826bd712-0b4b-4a84-8eea-b767f62ea665",
+       "name": "x_post",
+       "type": "string",
+       "value": "={{ $json.output.post }}"
+      }
+     ]
+    }
+   },
+   "typeVersion": 3.4
+  },
+  {
+   "id": "5d2cf1f4-e974-4cf0-89e6-6affd15f8493",
+   "name": "Loop Over Items1",
+   "type": "n8n-nodes-base.splitInBatches",
+   "position": [
+    112,
+    2112
+   ],
+   "parameters": {
+    "options": {}
+   },
+   "typeVersion": 3
+  },
+  {
+   "id": "2b7de710-a9c4-49db-988e-19661eaaff35",
+   "name": "Sticky Note19",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -928,
+    1584
+   ],
+   "parameters": {
+    "color": 5,
+    "width": 2144,
+    "height": 80,
+    "content": "# SYSTEM 4: Repurpose for X"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "a4a25ef3-28dc-405a-9a6d-cf7f8d68ff41",
+   "name": "Gemini flash2",
+   "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+   "position": [
+    816,
+    2624
+   ],
+   "parameters": {
+    "options": {},
+    "modelName": "models/gemini-2.5-flash-lite"
+   },
+   "credentials": {
+    "googlePalmApi": {
+     "id": "credential-id",
+     "name": "googlePalmApi Credential"
+    }
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "939567a8-b92c-493a-8943-e2f96723f4d4",
+   "name": "Aggregate3",
+   "type": "n8n-nodes-base.aggregate",
+   "position": [
+    400,
+    1920
+   ],
+   "parameters": {
+    "options": {},
+    "aggregate": "aggregateAllItemData"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "df7eac13-8a3b-42a3-b7bb-d8eb29cfcd6a",
+   "name": "Sticky Note21",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -384,
+    2352
+   ],
+   "parameters": {
+    "color": 6,
+    "width": 384,
+    "height": 256,
+    "content": "# Note\n## Good to run a week behind SMS (LinkedIn)"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "938d15cb-b9bc-4fe1-8be4-7459e764599f",
+   "name": "Sticky Note22",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -352,
+    1792
+   ],
+   "parameters": {
+    "width": 724,
+    "height": 80,
+    "content": "# Generate New Post Idea from viral posts"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "24311385-78f4-4815-8fbb-5b1918554a6e",
+   "name": "Sticky Note4",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    528,
+    2112
+   ],
+   "parameters": {
+    "color": 3,
+    "width": 496,
+    "height": 304,
+    "content": "### Make sure to change the system prompt according to your needs. (Currently optimized for AI, Automation-related content)"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "f7634378-ee66-4c78-b59c-45549b5f777a",
+   "name": "Generated ?1",
+   "type": "n8n-nodes-base.if",
+   "position": [
+    1088,
+    2240
+   ],
+   "parameters": {
+    "options": {},
+    "conditions": {
+     "options": {
+      "version": 2,
+      "leftValue": "",
+      "caseSensitive": true,
+      "typeValidation": "loose"
+     },
+     "combinator": "and",
+     "conditions": [
+      {
+       "id": "52069756-67e8-4d70-a47f-96b8062ac758",
+       "operator": {
+        "type": "string",
+        "operation": "exists",
+        "singleValue": true
+       },
+       "leftValue": "={{ $json.output.post }}",
+       "rightValue": ""
+      },
+      {
+       "id": "99d7f208-7a00-477d-bc65-71b124f0fab3",
+       "operator": {
+        "type": "string",
+        "operation": "notEquals"
+       },
+       "leftValue": "={{ $json.output.post }}",
+       "rightValue": ""
+      }
+     ]
+    },
+    "looseTypeValidation": true
+   },
+   "typeVersion": 2.2
+  },
+  {
+   "id": "8be58366-4c41-4ec1-8bff-b0250404a329",
+   "name": "Sticky Note5",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    1504,
+    2112
+   ],
+   "parameters": {
+    "height": 352,
+    "content": "### Appends post and the same image used for linkedin post"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "7764026d-fbec-44f1-9bee-031cce560860",
+   "name": "Content repurpose1",
+   "type": "@n8n/n8n-nodes-langchain.chainLlm",
+   "onError": "continueErrorOutput",
+   "position": [
+    4192,
+    1920
+   ],
+   "parameters": {
+    "text": "=This is the user idea to generate for X.\nFocus on instant value:\n\n```\n{{ $json.message.text.split(\":\")[1].trim() }}\n```",
+    "batching": {},
+    "messages": {
+     "messageValues": [
+      {
+       "message": "=# ROLE:\nYou're an expert in viral X (twitter) content generator with 10 years of experience. You've repurposed viral posts that have gotten 10 billion views in total.\n\n# SCENARIO:\nI'll provide an idea (as an INPUT) about AI Automation (basics to advanced topics of AI agents/ automation/ no-code, low-code tools). \n\nMy audience: AI enthusiasts, AI learners, founders, B2B business owners, and brands.  \n\nMy goals:\n- Teach them practical AI automation concepts.\n- Inspire/guide them to build AI solutions that reduce costs, save time, and increase efficiency.\n- Deliver value in a way that’s shareable and engaging.\n---\n\n# YOUR WORK:\n\n- Analyze the provided idea thoroughly.\n- Convert the idea into a Twitter thread.\n- If the user specifies the number of tweets → use that. If not specified → default to 5–7 tweets.\n\n- Follow X best practices for viral threads:\n - Each tweet max 280 characters.\n - Concise, valuable, and easy to skim.\n - Logical flow (each tweet should make the next one irresistible).\n - Deliver insights early, not buried deep in the thread.\n\n- Maintain a consistent style:\n - Informative + approachable tone.\n - Conversational, not academic (but still professional).\n - Avoid heavy jargon unless briefly explained.\n - Authentic voice: reflective honesty when possible (“I made this mistake too”).\n\n- OPTIONAL (if character count allows):\n - Use 2–3 relevant hashtags.\n - End with a short, cold CTA (e.g., “Your thoughts? 👇”, “Lemme know 👇”).\n\nFocus on clarity, shareability, and instant value.\n---\n\nOUTPUT FORMAT:\n\n{\n \"thread\": [\n  \"Tweet1\": \"\",\n  \"Tweet2\": \"\",\n  \"... up to user-defined or default length\": \"\"\n ]\n}\n---\n\n# IMPORTANT:\n- Never exceed 280 characters per tweet.\n- No clickbait hooks (e.g., “Stop doing this”, “You won’t believe…”).\n- Stick to requested length or default to 5–7 tweets.\n- Make sure to research before giving an info.\n- **Output only in the specified format.**"
+      },
+      {
+       "type": "AIMessagePromptTemplate",
+       "message": "=#EXAMPLE:\n\n## Example 1 (default length 6 tweets):\n\n### User input: “How AI agents reduce costs for small businesses”\n### Example output:\n{\n  \"thread\": [\n    \"Tweet1\": \"AI agents aren’t hype—they’re cost-cutting machines.\\n\\nSmall businesses using them save thousands yearly by automating what drains budgets most:\\n- Support\\n- Admin\\n- Marketing\\n- Data entry\\n\\nHere’s how these savings stack up in the real world 👇\",\n    \"Tweet2\": \"Customer support:\\n- AI chatbots handle 70–80% of repetitive queries.\\n- That means fewer hires, faster response times, and no burnout.\\n\\nA single bot can replace the work of 2–3 agents,\\nreducing overhead by $40k+ annually for many small businesses.\",\n    \"Tweet3\": \"Admin tasks:\\n- From drafting invoices to managing calendars and document filing,\\n  AI cuts 30–40% of routine ops hours.\\n\\nInstead of paying staff to do paperwork,\\nfounders reclaim time and save on headcount —\\nan average $25k–$50k in yearly costs.\",\n    \"Tweet4\": \"Marketing:\\n- AI content tools generate social posts, schedule campaigns,\\n  and even write newsletters.\\n\\nAgencies charge $2k–$5k per month for this work.\\nAutomating removes that cost while keeping output consistent\\nand measurable for growth.\",\n    \"Tweet5\": \"Data entry:\\n- AI updates CRMs, logs orders, tracks inventory, and keeps data clean.\\n\\nHumans make errors and slow down pipelines.\\nAutomating data tasks reduces mistakes by 90%+\\nand saves teams hundreds of hours of manual entry each quarter.\",\n    \"Tweet6\": \"The real advantage? Efficiency becomes your edge.\\n\\nWith AI agents handling repetitive tasks,\\nsmall businesses compete at enterprise speed without scaling payroll.\\n\\n👉 Follow for weekly breakdowns of automations that cut costs and grow margins.\"\n  ]\n}\n\n---\n\n## Example 2 (user-specified: 4 tweets)\n\n### User input: “Generate 4 threads on: No-code AI tools for lead generation”\n### Example output:\n{\n  \"thread\": [\n    \"Tweet1\": \"Lead generation no longer requires a big dev team.\\n\\nNo-code AI tools handle 80% of the process, automating:\\n- Scraping\\n- Outreach\\n- Enrichment\\n\\nHere are two setups that save time, boost pipeline volume,\\nand cut manual lead gen costs 👇\",\n    \"Tweet2\": \"Tool 1: PhantomBuster\\n- Automatically scrapes LinkedIn leads\\n- Enriches profiles\\n- Exports everything directly to your CRM\\n\\nWhat used to take a sales rep 20+ hrs weekly\\ncan now be automated in minutes,\\nscaling prospecting without new hires.\",\n    \"Tweet3\": \"Tool 2: Zapier/n8n + GPT\\n- Every time a new lead enters your CRM or sheet,\\n  GPT generates a personalized outreach email.\\n\\nNo generic blasts. No hours wasted writing.\\n\\n✅ Higher engagement\\n✅ Faster replies\\n✅ Better pipeline conversion rates\",\n    \"Tweet4\": \"Together, these tools give small B2B teams a sales edge\\npreviously reserved for well-funded orgs with large SDR teams.\\n\\nHigher volume + Lower cost = Efficiency advantage 🚀\\n\\n👉 Lemme know if you need more proven no-code AI stacks.\"\n  ]\n}"
+      }
+     ]
+    },
+    "promptType": "define",
+    "needsFallback": true,
+    "hasOutputParser": true
+   },
+   "typeVersion": 1.7,
+   "alwaysOutputData": false
+  },
+  {
+   "id": "d5cc4ab8-3dcf-480f-99e7-85de45bd9c04",
+   "name": "Gemini pro1",
+   "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+   "position": [
+    4016,
+    2128
+   ],
+   "parameters": {
+    "options": {},
+    "modelName": "models/gemini-2.5-pro"
+   },
+   "credentials": {
+    "googlePalmApi": {
+     "id": "credential-id",
+     "name": "googlePalmApi Credential"
+    }
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "a06a691f-ce35-4c1c-9c98-9e20627e6193",
+   "name": "Edit Fields4",
+   "type": "n8n-nodes-base.set",
+   "position": [
+    4816,
+    1888
+   ],
+   "parameters": {
+    "options": {},
+    "assignments": {
+     "assignments": [
+      {
+       "id": "eb6ff17c-e8a9-4dd1-8967-33a20a63c012",
+       "name": "output.thread",
+       "type": "string",
+       "value": "={{ Object.values($json.output.thread).join(\"\\n\\n#\\n\") }}"
+      }
+     ]
+    }
+   },
+   "typeVersion": 3.4
+  },
+  {
+   "id": "65bb5ff6-2c3d-4a89-8803-95801ee7ab16",
+   "name": "Structured Output Parser3",
+   "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+   "position": [
+    4352,
+    2112
+   ],
+   "parameters": {
+    "autoFix": true,
+    "schemaType": "manual",
+    "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"thread\": {\n      \"type\": \"object\",\n      \"patternProperties\": {\n        \"^Tweet[0-9]+$\": {\n          \"type\": \"string\",\n          \"maxLength\": 280,\n          \"minLength\": 40\n        }\n      },\n      \"minProperties\": 1,\n      \"additionalProperties\": false\n    }\n  },\n  \"required\": [\"thread\"]\n}"
+   },
+   "typeVersion": 1.3
+  },
+  {
+   "id": "56e8b52c-4a52-4aeb-ae43-5543bd0664f9",
+   "name": "Deepseek4",
+   "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+   "position": [
+    4176,
+    2128
+   ],
+   "parameters": {
+    "model": "deepseek/deepseek-chat-v3-0324:free",
+    "options": {}
+   },
+   "credentials": {
+    "openRouterApi": {
+     "id": "credential-id",
+     "name": "openRouterApi Credential"
+    }
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "3f6d1595-182e-4325-841a-da833461cf0b",
+   "name": "Gemini flash3",
+   "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+   "position": [
+    4256,
+    2304
+   ],
+   "parameters": {
+    "options": {},
+    "modelName": "models/gemini-2.5-flash-lite"
+   },
+   "credentials": {
+    "googlePalmApi": {
+     "id": "credential-id",
+     "name": "googlePalmApi Credential"
+    }
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "5928023b-62c4-4b41-b83a-2435721d5c12",
+   "name": "Sticky Note23",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    3824,
+    1584
+   ],
+   "parameters": {
+    "color": 5,
+    "width": 1908,
+    "content": "# Generate New Post Idea from user's idea\nThis is a seperate workflow. \nAdd a`  When executed by another workflow  ` trigger node at the beginning\nThis will execute when the user sends a post idea via telegram (text)"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "7700fa0a-0993-4260-987e-13994a0bcbb4",
+   "name": "Send post1",
+   "type": "n8n-nodes-base.telegram",
+   "position": [
+    5040,
+    1888
+   ],
+   "webhookId": "eb752f40-2bda-4e78-a0bc-ac625a2dbbd3",
+   "parameters": {
+    "text": "=Generated X post content from your idea.\nPlease have a look:\n---\n\n{{ $json.output.thread }}",
+    "chatId": "=",
+    "additionalFields": {
+     "appendAttribution": false
+    }
+   },
+   "credentials": {
+    "telegramApi": {
+     "id": "credential-id",
+     "name": "telegramApi Credential"
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "652285c1-5509-4b1a-abf5-2fd4711562d3",
+   "name": "Generated ?2",
+   "type": "n8n-nodes-base.if",
+   "position": [
+    4560,
+    1904
+   ],
+   "parameters": {
+    "options": {},
+    "conditions": {
+     "options": {
+      "version": 2,
+      "leftValue": "",
+      "caseSensitive": true,
+      "typeValidation": "loose"
+     },
+     "combinator": "and",
+     "conditions": [
+      {
+       "id": "52069756-67e8-4d70-a47f-96b8062ac758",
+       "operator": {
+        "type": "object",
+        "operation": "exists",
+        "singleValue": true
+       },
+       "leftValue": "={{ $json.output.thread }}",
+       "rightValue": ""
+      },
+      {
+       "id": "8145853e-c265-46cf-8754-95be59fd210a",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       },
+       "leftValue": "={{ $json.output.thread.Tweet1 }}",
+       "rightValue": ""
+      }
+     ]
+    },
+    "looseTypeValidation": true
+   },
+   "typeVersion": 2.2
+  },
+  {
+   "id": "67450c76-99e1-4d28-8490-8e6efee603b7",
+   "name": "Sticky Note11",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    4144,
+    1792
+   ],
+   "parameters": {
+    "color": 3,
+    "width": 352,
+    "height": 256,
+    "content": "This will generate 4-6 X threads for a post idea sent by the user.\n\nMake sure to configure the system prompt according to your needs."
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "adb0597f-85e5-4bdb-af24-19543f8ebf70",
+   "name": "6 pm",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "disabled": true,
+   "position": [
+    -496,
+    3456
+   ],
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "triggerAtHour": 18
+      }
+     ]
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "1ee7a89e-a1ac-442c-a7e1-5895d668339c",
+   "name": "Create a post",
+   "type": "n8n-nodes-base.linkedIn",
+   "disabled": true,
+   "position": [
+    32,
+    3456
+   ],
+   "parameters": {
+    "text": "={{ $json['Generated Content'] }}",
+    "additionalFields": {},
+    "shareMediaCategory": "IMAGE"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "8ea814e0-04d8-40cf-936f-432b1751a666",
+   "name": "Download file",
+   "type": "n8n-nodes-base.googleDrive",
+   "position": [
+    -144,
+    3456
+   ],
+   "parameters": {
+    "fileId": {
+     "__rl": true,
+     "mode": "id",
+     "value": "=1361zG8MuRThZksa1vVNg25-ctr749eUJ"
+    },
+    "options": {},
+    "operation": "download"
+   },
+   "credentials": {
+    "googleDriveOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleDriveOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 3
+  },
+  {
+   "id": "5b52c2b6-838d-422e-b077-38e85cd786d3",
+   "name": "Update status",
+   "type": "n8n-nodes-base.googleSheets",
+   "position": [
+    224,
+    3456
+   ],
+   "parameters": {
+    "columns": {
+     "value": {
+      "status": "Posted",
+      "row_number": "={{ $json.row_number }}"
+     },
+     "schema": [
+      {
+       "id": "Generated Content",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Generated Content",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Source content",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Source content",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Source url",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Source url",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "image",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "image",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "image id",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "image id",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "status",
+       "type": "string",
+       "display": true,
+       "required": false,
+       "displayName": "status",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "row_number",
+       "type": "number",
+       "display": true,
+       "removed": false,
+       "readOnly": true,
+       "required": false,
+       "displayName": "row_number",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      }
+     ],
+     "mappingMode": "defineBelow",
+     "matchingColumns": [
+      "row_number"
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {},
+    "operation": "update",
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": "gid=0",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk/edit#gid=0",
+     "cachedResultName": "Content Gen (LinkedIn)"
+    },
+    "documentId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14yeNCC9M7SHN0XG8hgXxCSh9rDkzg_ywIlu_GcZgUu8/edit?usp=drivesdk",
+     "cachedResultName": "Social Post Automation (SMS)"
+    }
+   },
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleSheetsOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 4.6
+  },
+  {
+   "id": "76026aec-6d17-429b-a8e2-7cbda563c54a",
+   "name": "Notify user",
+   "type": "n8n-nodes-base.telegram",
+   "disabled": true,
+   "position": [
+    400,
+    3456
+   ],
+   "webhookId": "d45c7191-28a1-46c5-bbea-69e4fb0dad45",
+   "parameters": {
+    "text": "=**Posted to LinkedIn**\n\n**Content:** {{ $('Get content1').item.json['Generated Content'].slice(0,30) }}...\nHave a look:",
+    "additionalFields": {}
+   },
+   "credentials": {
+    "telegramApi": {
+     "id": "credential-id",
+     "name": "telegramApi Credential"
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "5572aa4a-71bb-4800-b920-d0f960a1187d",
+   "name": "Get content1",
+   "type": "n8n-nodes-base.googleSheets",
+   "position": [
+    -320,
+    3456
+   ],
+   "parameters": {
+    "options": {
+     "returnFirstMatch": true
+    },
+    "filtersUI": {
+     "values": [
+      {
+       "lookupValue": "Ready to post",
+       "lookupColumn": "status"
+      }
+     ]
+    },
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": "gid=0",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk/edit#gid=0",
+     "cachedResultName": "Content Gen (LinkedIn)"
+    },
+    "documentId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14yeNCC9M7SHN0XG8hgXxCSh9rDkzg_ywIlu_GcZgUu8/edit?usp=drivesdk",
+     "cachedResultName": "Social Post Automation (SMS)"
+    }
+   },
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleSheetsOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 4.6
+  },
+  {
+   "id": "e5018325-4022-494e-ba56-15ec0d2fd869",
+   "name": "6:30 pm",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "position": [
+    1024,
+    3536
+   ],
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "triggerAtHour": 18,
+       "triggerAtMinute": 30
+      }
+     ]
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "0be7a647-8630-463d-bb90-6c8421145870",
+   "name": "Get valid content",
+   "type": "n8n-nodes-base.googleSheets",
+   "position": [
+    1248,
+    3536
+   ],
+   "parameters": {
+    "options": {
+     "returnFirstMatch": true
+    },
+    "filtersUI": {
+     "values": [
+      {
+       "lookupValue": "Waiting",
+       "lookupColumn": "Status"
+      },
+      {
+       "lookupValue": "Ready",
+       "lookupColumn": "Status"
+      }
+     ]
+    },
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": 1296602811,
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk/edit#gid=1296602811",
+     "cachedResultName": "Other handles"
+    },
+    "documentId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14yeNCC9M7SHN0XG8hgXxCSh9rDkzg_ywIlu_GcZgUu8/edit?usp=drivesdk",
+     "cachedResultName": "Social Post Automation (SMS)"
+    },
+    "combineFilters": "OR"
+   },
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleSheetsOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 4.6
+  },
+  {
+   "id": "87492ad0-9724-4db7-844a-17fc237973d4",
+   "name": "Create Tweet",
+   "type": "n8n-nodes-base.twitter",
+   "position": [
+    2144,
+    3440
+   ],
+   "parameters": {
+    "text": "={{ \n  $('Get valid content').item.json['X post'].length > 280 \n    ? $('Get valid content').item.json['X post']\n        .replace(/(\\s+#\\w+)+$/,'')\n        .slice(0, 280)\n    : $('Get valid content').item.json['X post'] \n}}",
+    "additionalFields": {
+     "attachments": "={{ $json.media_id_string }}"
+    }
+   },
+   "credentials": {
+    "twitterOAuth2Api": {
+     "id": "credential-id",
+     "name": "twitterOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 2
+  },
+  {
+   "id": "b2e72ca9-973c-489a-8230-3d22c9e03be0",
+   "name": "Update status1",
+   "type": "n8n-nodes-base.googleSheets",
+   "position": [
+    2384,
+    3440
+   ],
+   "parameters": {
+    "columns": {
+     "value": {
+      "Status": "Posted",
+      "X post": "={{ $('Get valid content').item.json['X post'] }}",
+      "X post Date": "={{ $now.format('dd.MM.yy') }}"
+     },
+     "schema": [
+      {
+       "id": "Main Content (LinkedIn)",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Main Content (LinkedIn)",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "X post",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "X post",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "X image",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "X image",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Image Validity",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Image Validity",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Status",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "Status",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "X post Date",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "X post Date",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "row_number",
+       "type": "number",
+       "display": true,
+       "removed": true,
+       "readOnly": true,
+       "required": false,
+       "displayName": "row_number",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      }
+     ],
+     "mappingMode": "defineBelow",
+     "matchingColumns": [
+      "X post"
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {},
+    "operation": "update",
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": 1296602811,
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk/edit#gid=1296602811",
+     "cachedResultName": "Other handles"
+    },
+    "documentId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14yeNCC9M7SHN0XG8hgXxCSh9rDkzg_ywIlu_GcZgUu8/edit?usp=drivesdk",
+     "cachedResultName": "Social Post Automation (SMS)"
+    }
+   },
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleSheetsOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 4.6
+  },
+  {
+   "id": "a79a6dee-8f83-4588-abe9-591a813ce289",
+   "name": "Get image",
+   "type": "n8n-nodes-base.googleDrive",
+   "position": [
+    1696,
+    3440
+   ],
+   "parameters": {
+    "fileId": {
+     "__rl": true,
+     "mode": "url",
+     "value": "={{ $json['X image'] }}"
+    },
+    "options": {},
+    "operation": "download"
+   },
+   "credentials": {
+    "googleDriveOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleDriveOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 3
+  },
+  {
+   "id": "0420ca11-e94b-4914-91ac-19dc59cb5354",
+   "name": "Image valid?",
+   "type": "n8n-nodes-base.if",
+   "position": [
+    1472,
+    3536
+   ],
+   "parameters": {
+    "options": {},
+    "conditions": {
+     "options": {
+      "version": 2,
+      "leftValue": "",
+      "caseSensitive": true,
+      "typeValidation": "strict"
+     },
+     "combinator": "and",
+     "conditions": [
+      {
+       "id": "58ec4b04-0f91-452e-96f6-1ee8f2804a45",
+       "operator": {
+        "type": "string",
+        "operation": "notEmpty",
+        "singleValue": true
+       },
+       "leftValue": "={{ $json['X image'] }}",
+       "rightValue": ""
+      },
+      {
+       "id": "2d74d380-40b0-494c-a482-90b2af47201b",
+       "operator": {
+        "name": "filter.operator.equals",
+        "type": "string",
+        "operation": "equals"
+       },
+       "leftValue": "={{ $json[\"Image Validity\"] }}",
+       "rightValue": "Valid"
+      }
+     ]
+    },
+    "looseTypeValidation": true
+   },
+   "typeVersion": 2.2
+  },
+  {
+   "id": "d2c278d9-b1dd-44cc-8b7d-b9f45c1f97a8",
+   "name": "Create Tweet1",
+   "type": "n8n-nodes-base.twitter",
+   "position": [
+    1696,
+    3632
+   ],
+   "parameters": {
+    "text": "={{ \n  $('Get valid content').item.json['X post'].length > 280 \n    ? $('Get valid content').item.json['X post']\n        .replace(/(\\s+#\\w+)+$/,'')\n        .slice(0, 280)\n    : $('Get valid content').item.json['X post'] \n}}",
+    "additionalFields": {}
+   },
+   "credentials": {
+    "twitterOAuth2Api": {
+     "id": "credential-id",
+     "name": "twitterOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 2
+  },
+  {
+   "id": "e892b671-6d7e-44df-89e0-453d47146115",
+   "name": "Update status2",
+   "type": "n8n-nodes-base.googleSheets",
+   "position": [
+    1920,
+    3632
+   ],
+   "parameters": {
+    "columns": {
+     "value": {
+      "Status": "Posted",
+      "X post": "={{ $('Get valid content').item.json['X post'] }}",
+      "X post Date": "={{ $now.format('dd.MM.yy') }}"
+     },
+     "schema": [
+      {
+       "id": "Main Content (LinkedIn)",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Main Content (LinkedIn)",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "X post",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "X post",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "X image",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "X image",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Image Validity",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Image Validity",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "Status",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "Status",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "X post Date",
+       "type": "string",
+       "display": true,
+       "removed": false,
+       "required": false,
+       "displayName": "X post Date",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      },
+      {
+       "id": "row_number",
+       "type": "number",
+       "display": true,
+       "removed": true,
+       "readOnly": true,
+       "required": false,
+       "displayName": "row_number",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      }
+     ],
+     "mappingMode": "defineBelow",
+     "matchingColumns": [
+      "X post"
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {},
+    "operation": "update",
+    "sheetName": {
+     "__rl": true,
+     "mode": "list",
+     "value": 1296602811,
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk/edit#gid=1296602811",
+     "cachedResultName": "Other handles"
+    },
+    "documentId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "1uyTMFCDaQhYE76OWPjGBz5oRBvZHsA7SjVxOOs-iBbk",
+     "cachedResultUrl": "https://docs.google.com/spreadsheets/d/14yeNCC9M7SHN0XG8hgXxCSh9rDkzg_ywIlu_GcZgUu8/edit?usp=drivesdk",
+     "cachedResultName": "Social Post Automation (SMS)"
+    }
+   },
+   "credentials": {
+    "googleSheetsOAuth2Api": {
+     "id": "credential-id",
+     "name": "googleSheetsOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 4.6
+  },
+  {
+   "id": "5d94f34e-216d-4bcb-8ce5-854ce237bd5d",
+   "name": "Upload image to X",
+   "type": "n8n-nodes-base.httpRequest",
+   "position": [
+    1920,
+    3440
+   ],
+   "parameters": {
+    "url": "https://upload.twitter.com/1.1/media/upload.json",
+    "method": "POST",
+    "options": {},
+    "sendBody": true,
+    "contentType": "multipart-form-data",
+    "authentication": "predefinedCredentialType",
+    "bodyParameters": {
+     "parameters": [
+      {
+       "name": "media",
+       "parameterType": "formBinaryData",
+       "inputDataFieldName": "data"
+      }
+     ]
+    },
+    "nodeCredentialType": "twitterOAuth1Api"
+   },
+   "credentials": {
+    "twitterOAuth1Api": {
+     "id": "credential-id",
+     "name": "twitterOAuth1Api Credential"
+    },
+    "twitterOAuth2Api": {
+     "id": "credential-id",
+     "name": "twitterOAuth2Api Credential"
+    }
+   },
+   "typeVersion": 4.2
+  },
+  {
+   "id": "9c1dcced-12e5-44ad-adcb-3119f204d59b",
+   "name": "Sticky Note12",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -496,
+    3296
+   ],
+   "parameters": {
+    "width": 672,
+    "height": 96,
+    "content": "## Post to LinkedIn\nCheck for valid contents\nPost a valid content to LinkedIn and append the post record to sheets"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "147c2348-9da8-450e-baaa-0460d96b3df9",
+   "name": "Sticky Note13",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -912,
+    2992
+   ],
+   "parameters": {
+    "color": 5,
+    "width": 3328,
+    "height": 128,
+    "content": "# System 5: Auto Post to different platforms"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "cd0b2d85-59a7-46c4-b386-9b86540d3743",
+   "name": "Sticky Note14",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    1024,
+    3280
+   ],
+   "parameters": {
+    "width": 672,
+    "height": 96,
+    "content": "## Post to X\nCheck for valid contents\nPost a valid content to X and append the post record to sheets"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "2daad5da-7715-43bd-ba31-9fd2a19327e5",
+   "name": "Sticky Note15",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    1840,
+    3312
+   ],
+   "parameters": {
+    "color": 6,
+    "height": 272,
+    "content": "## NOTE:\n X OAuth (Not OAuth2) crential is needed here."
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "18b7ab74-3a98-4058-b367-f7a97d722a52",
+   "name": "1 min",
+   "type": "n8n-nodes-base.wait",
+   "position": [
+    96,
+    4592
+   ],
+   "webhookId": "06b9fbc4-d557-45b4-a996-1d7321274330",
+   "parameters": {
+    "unit": "minutes",
+    "amount": 1
+   },
+   "typeVersion": 1.1
+  },
+  {
+   "id": "26cc17e0-64a8-4b7f-b3bc-86762d1223ed",
+   "name": "Switch",
+   "type": "n8n-nodes-base.switch",
+   "position": [
+    528,
+    4592
+   ],
+   "parameters": {
+    "rules": {
+     "values": [
+      {
+       "outputKey": "finished",
+       "conditions": {
+        "options": {
+         "version": 2,
+         "leftValue": "",
+         "caseSensitive": true,
+         "typeValidation": "strict"
+        },
+        "combinator": "and",
+        "conditions": [
+         {
+          "id": "f1fc4598-a5ef-4797-b677-643f6a45c65a",
+          "operator": {
+           "type": "string",
+           "operation": "equals"
+          },
+          "leftValue": "={{ $json.status }}",
+          "rightValue": "finished"
+         }
+        ]
+       },
+       "renameOutput": true
+      },
+      {
+       "outputKey": "failed",
+       "conditions": {
+        "options": {
+         "version": 2,
+         "leftValue": "",
+         "caseSensitive": true,
+         "typeValidation": "strict"
+        },
+        "combinator": "and",
+        "conditions": [
+         {
+          "id": "a0c11d7e-719d-4510-8084-bce15fdacad6",
+          "operator": {
+           "name": "filter.operator.equals",
+           "type": "string",
+           "operation": "equals"
+          },
+          "leftValue": "={{ $json.status }}",
+          "rightValue": "failed"
+         }
+        ]
+       },
+       "renameOutput": true
+      },
+      {
+       "outputKey": "canceled",
+       "conditions": {
+        "options": {
+         "version": 2,
+         "leftValue": "",
+         "caseSensitive": true,
+         "typeValidation": "strict"
+        },
+        "combinator": "and",
+        "conditions": [
+         {
+          "id": "b8cf8234-4dea-40cb-992c-16d605676e36",
+          "operator": {
+           "name": "filter.operator.equals",
+           "type": "string",
+           "operation": "equals"
+          },
+          "leftValue": "={{ $json.status }}",
+          "rightValue": "canceled"
+         }
+        ]
+       },
+       "renameOutput": true
+      },
+      {
+       "outputKey": "pausing",
+       "conditions": {
+        "options": {
+         "version": 2,
+         "leftValue": "",
+         "caseSensitive": true,
+         "typeValidation": "strict"
+        },
+        "combinator": "and",
+        "conditions": [
+         {
+          "id": "41038196-41df-4c3c-8b1b-f8a6321bab7b",
+          "operator": {
+           "name": "filter.operator.equals",
+           "type": "string",
+           "operation": "equals"
+          },
+          "leftValue": "={{ $json.status }}",
+          "rightValue": "pausing"
+         }
+        ]
+       },
+       "renameOutput": true
+      },
+      {
+       "outputKey": "paused",
+       "conditions": {
+        "options": {
+         "version": 2,
+         "leftValue": "",
+         "caseSensitive": true,
+         "typeValidation": "strict"
+        },
+        "combinator": "and",
+        "conditions": [
+         {
+          "id": "6dc15a11-eb1d-405f-aa84-06ec7fdc3995",
+          "operator": {
+           "name": "filter.operator.equals",
+           "type": "string",
+           "operation": "equals"
+          },
+          "leftValue": "={{ $json.status }}",
+          "rightValue": "paused"
+         }
+        ]
+       },
+       "renameOutput": true
+      },
+      {
+       "outputKey": "running",
+       "conditions": {
+        "options": {
+         "version": 2,
+         "leftValue": "",
+         "caseSensitive": true,
+         "typeValidation": "strict"
+        },
+        "combinator": "and",
+        "conditions": [
+         {
+          "id": "457ac350-3c7c-459b-9ef8-93c2d2380660",
+          "operator": {
+           "name": "filter.operator.equals",
+           "type": "string",
+           "operation": "equals"
+          },
+          "leftValue": "={{ $json.status }}",
+          "rightValue": "running"
+         }
+        ]
+       },
+       "renameOutput": true
+      },
+      {
+       "outputKey": "created",
+       "conditions": {
+        "options": {
+         "version": 2,
+         "leftValue": "",
+         "caseSensitive": true,
+         "typeValidation": "strict"
+        },
+        "combinator": "and",
+        "conditions": [
+         {
+          "id": "9a39ebb6-46ff-438a-bfd7-4848722bd957",
+          "operator": {
+           "name": "filter.operator.equals",
+           "type": "string",
+           "operation": "equals"
+          },
+          "leftValue": "={{ $json.status }}",
+          "rightValue": "created"
+         }
+        ]
+       },
+       "renameOutput": true
+      }
+     ]
+    },
+    "options": {}
+   },
+   "typeVersion": 3.2
+  },
+  {
+   "id": "934bbf3f-4af2-4851-a3a0-2f3efc69d463",
+   "name": "Error",
+   "type": "n8n-nodes-base.set",
+   "position": [
+    752,
+    4704
+   ],
+   "parameters": {
+    "options": {},
+    "assignments": {
+     "assignments": [
+      {
+       "id": "a261d6b2-cd4c-4574-9930-5c57eaf7b248",
+       "name": "Error",
+       "type": "string",
+       "value": "The RESEARCH tool returned an error. Please don't use the ERROR Output at any case.\n**Use your own search capabilities to find the necessary data.**"
+      }
+     ]
+    }
+   },
+   "typeVersion": 3.4
+  },
+  {
+   "id": "72b6496e-8ac9-4c5d-9cd2-3425cbd562d0",
+   "name": "Create task",
+   "type": "n8n-nodes-base.httpRequest",
+   "position": [
+    -224,
+    4592
+   ],
+   "parameters": {
+    "url": "https://api.browseract.com/v2/agent/run-task",
+    "method": "POST",
+    "options": {},
+    "jsonBody": "={\n  \"agent_id\": <your_agent_ID_string>,\n  \"task\": \"{{ $('Telegram trigger').item.json.query }}\"\n}",
+    "sendBody": true,
+    "specifyBody": "json",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth"
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "credential-id",
+     "name": "httpHeaderAuth Credential"
+    }
+   },
+   "typeVersion": 4.2
+  },
+  {
+   "id": "73be38ab-e357-45c9-bffb-f58a27a89b3a",
+   "name": "Get task status",
+   "type": "n8n-nodes-base.httpRequest",
+   "position": [
+    304,
+    4592
+   ],
+   "parameters": {
+    "url": "=https://api.browseract.com/v1/get-task-YOUR_OPENAI_KEY_HERE?task_id={{ $('Create task').item.json.id }}",
+    "options": {},
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth"
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "credential-id",
+     "name": "httpHeaderAuth Credential"
+    }
+   },
+   "typeVersion": 4.2
+  },
+  {
+   "id": "91c285cf-7b80-47e8-9221-8d61c0165e23",
+   "name": "get output",
+   "type": "n8n-nodes-base.httpRequest",
+   "position": [
+    880,
+    4576
+   ],
+   "parameters": {
+    "url": "=https://api.browseract.com/v1/get-task?task_id={{ $('Create task').item.json.id }}",
+    "options": {},
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth"
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "credential-id",
+     "name": "httpHeaderAuth Credential"
+    }
+   },
+   "typeVersion": 4.2
+  },
+  {
+   "id": "f1f1ca83-c550-4d6c-a433-5969be2cde6c",
+   "name": "Output",
+   "type": "n8n-nodes-base.set",
+   "position": [
+    1088,
+    4576
+   ],
+   "parameters": {
+    "options": {},
+    "assignments": {
+     "assignments": [
+      {
+       "id": "14b6c628-fab2-4a94-8c31-20086f9117d3",
+       "name": "output",
+       "type": "string",
+       "value": "={{ $json.output.string }}"
+      }
+     ]
+    }
+   },
+   "typeVersion": 3.4
+  },
+  {
+   "id": "d40ed3de-745b-4d62-99f4-972920087693",
+   "name": "Perplexity Research",
+   "type": "n8n-nodes-base.httpRequest",
+   "disabled": true,
+   "position": [
+    1392,
+    4400
+   ],
+   "parameters": {
+    "url": "https://api.perplexity.ai/chat/completions",
+    "method": "POST",
+    "options": {},
+    "jsonBody": "={\n  \"model\": \"sonar\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You're a professional content researcher inside the copywriting agency, you know how to search for interesting facts and articles to use in our media. You search for concrete stuff, facts and examples.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{$json.query.replace(/\"/g, '')}}\"\n    }\n  ],\n  \"temperature\": 0.2,\n  \"top_p\": 0.9,\n  \"return_images\": false,\n  \"return_related_questions\": false,\n  \"top_k\": 0,\n  \"stream\": false,\n  \"presence_penalty\": 0,\n  \"frequency_penalty\": 1,\n  \"response_format\": null\n}",
+    "sendBody": true,
+    "specifyBody": "json",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth"
+   },
+   "typeVersion": 4.2
+  },
+  {
+   "id": "8c8b32a1-f6f8-4823-b94e-1361311a4ef1",
+   "name": "Output1",
+   "type": "n8n-nodes-base.set",
+   "disabled": true,
+   "position": [
+    1584,
+    4400
+   ],
+   "parameters": {
+    "options": {},
+    "assignments": {
+     "assignments": [
+      {
+       "id": "464443a2-d5aa-4aa3-bd06-60372337a0e2",
+       "name": "output",
+       "type": "string",
+       "value": "={{ $('Perplexity Research').item.json.choices[0].message.content }}"
+      }
+     ]
+    }
+   },
+   "typeVersion": 3.4
+  },
+  {
+   "id": "4230d8f3-5349-4895-aa51-a7358bf6426d",
+   "name": "Telegram Trigger",
+   "type": "n8n-nodes-base.telegramTrigger",
+   "position": [
+    2480,
+    4576
+   ],
+   "webhookId": "2d34ae66-52d9-40e7-ada6-bc91b0bbbbc6",
+   "parameters": {
+    "updates": [
+     "message"
+    ],
+    "additionalFields": {
+     "chatIds": ""
+    }
+   },
+   "credentials": {
+    "telegramApi": {
+     "id": "credential-id",
+     "name": "telegramApi Credential"
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "16563435-48e3-4868-a784-2074d9a1c93f",
+   "name": "If Dipt",
+   "type": "n8n-nodes-base.if",
+   "disabled": true,
+   "position": [
+    3744,
+    4448
+   ],
+   "parameters": {
+    "options": {},
+    "conditions": {
+     "options": {
+      "version": 2,
+      "leftValue": "",
+      "caseSensitive": true,
+      "typeValidation": "strict"
+     },
+     "combinator": "and",
+     "conditions": [
+      {
+       "id": "2c3e18d6-718c-4589-b98f-4d9750aed8e4",
+       "operator": {
+        "type": "number",
+        "operation": "equals"
+       },
+       "leftValue": "={{ $json.message.chat.id }}",
+       "rightValue": 6208595142
+      }
+     ]
+    }
+   },
+   "typeVersion": 2.2
+  },
+  {
+   "id": "4e0d313b-f444-4d70-8cc7-bc21401329ae",
+   "name": "Wrong user",
+   "type": "n8n-nodes-base.telegram",
+   "disabled": true,
+   "position": [
+    4000,
+    4464
+   ],
+   "webhookId": "52af7ed4-1c89-4e61-98e0-8ea90cf5976d",
+   "parameters": {
+    "text": "=Sorry, you don't have access to this assistant.\nPlease contant the owner to get access.",
+    "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+    "additionalFields": {}
+   },
+   "credentials": {
+    "telegramApi": {
+     "id": "credential-id",
+     "name": "telegramApi Credential"
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "b1ff8b42-2103-4e10-8e48-2d58483b44d7",
+   "name": "Incorrect input",
+   "type": "n8n-nodes-base.telegram",
+   "position": [
+    2928,
+    4784
+   ],
+   "webhookId": "eb752f40-2bda-4e78-a0bc-ac625a2dbbd3",
+   "parameters": {
+    "text": "=**Wrong Input!**\nPlease choose one of the following operations:\n\n```\nOperation- /sms.scrape\nGuide- Scrape viral LinkedIn posts of competitors. (use on saturdays)```\n\n\n```\nOperation- /sms.linkedin: {post_idea}\nGuide- Generate a LinkedIn post using the _post idea_```\n\n\n```\nOperation- /sms.x: {post_idea}\nGuide- Generate a X Thread using the _post idea_```\n",
+    "chatId": "=",
+    "additionalFields": {
+     "appendAttribution": false
+    }
+   },
+   "credentials": {
+    "telegramApi": {
+     "id": "credential-id",
+     "name": "telegramApi Credential"
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "f3600fe1-f11e-4bdd-b3ee-8cbaad77f719",
+   "name": "Execute post scraper",
+   "type": "n8n-nodes-base.executeWorkflow",
+   "position": [
+    3312,
+    4752
+   ],
+   "parameters": {
+    "options": {
+     "waitForSubWorkflow": false
+    },
+    "workflowId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "9N4i39ZKubB2G9am",
+     "cachedResultName": "Scrape Viral Idea"
+    },
+    "workflowInputs": {
+     "value": {},
+     "schema": [],
+     "mappingMode": "defineBelow",
+     "matchingColumns": [],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": true
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "76a9f77d-552e-4af7-a3a3-7973bb3d10c5",
+   "name": "Operation ?",
+   "type": "n8n-nodes-base.switch",
+   "position": [
+    2704,
+    4528
+   ],
+   "parameters": {
+    "rules": {
+     "values": [
+      {
+       "outputKey": "linkedin post",
+       "conditions": {
+        "options": {
+         "version": 2,
+         "leftValue": "",
+         "caseSensitive": true,
+         "typeValidation": "strict"
+        },
+        "combinator": "and",
+        "conditions": [
+         {
+          "id": "711514fe-4aa1-4714-be69-ffccb998ec67",
+          "operator": {
+           "type": "string",
+           "operation": "contains"
+          },
+          "leftValue": "={{ $json.message.text }}",
+          "rightValue": "/sms.linkedin:"
+         }
+        ]
+       },
+       "renameOutput": true
+      },
+      {
+       "outputKey": "x post",
+       "conditions": {
+        "options": {
+         "version": 2,
+         "leftValue": "",
+         "caseSensitive": true,
+         "typeValidation": "strict"
+        },
+        "combinator": "and",
+        "conditions": [
+         {
+          "id": "0c4ccb35-5278-4a13-ac27-cc05a55dca7d",
+          "operator": {
+           "type": "string",
+           "operation": "contains"
+          },
+          "leftValue": "={{ $json.message.text }}",
+          "rightValue": "/sms.x:"
+         }
+        ]
+       },
+       "renameOutput": true
+      },
+      {
+       "outputKey": "scrape posts",
+       "conditions": {
+        "options": {
+         "version": 2,
+         "leftValue": "",
+         "caseSensitive": true,
+         "typeValidation": "strict"
+        },
+        "combinator": "and",
+        "conditions": [
+         {
+          "id": "a86190c9-b9ea-427e-a111-0033b5c18e56",
+          "operator": {
+           "type": "string",
+           "operation": "contains"
+          },
+          "leftValue": "={{ $json.message.text }}",
+          "rightValue": "/sms.scrape"
+         }
+        ]
+       },
+       "renameOutput": true
+      },
+      {
+       "outputKey": "wrong",
+       "conditions": {
+        "options": {
+         "version": 2,
+         "leftValue": "",
+         "caseSensitive": true,
+         "typeValidation": "strict"
+        },
+        "combinator": "and",
+        "conditions": [
+         {
+          "id": "56703077-0d3e-4b40-afac-fc3b027c5955",
+          "operator": {
+           "type": "string",
+           "operation": "notContains"
+          },
+          "leftValue": "={{ $json.message.text }}",
+          "rightValue": "/sms.scrape"
+         }
+        ]
+       },
+       "renameOutput": true
+      }
+     ]
+    },
+    "options": {}
+   },
+   "typeVersion": 3.2
+  },
+  {
+   "id": "ca5e6a82-211c-4769-92a5-0fc9b8372422",
+   "name": "Start notif",
+   "type": "n8n-nodes-base.telegram",
+   "position": [
+    2944,
+    4304
+   ],
+   "webhookId": "eb752f40-2bda-4e78-a0bc-ac625a2dbbd3",
+   "parameters": {
+    "text": "=Workflow started executing.\n\nYou'll be notified once the execution is finished.",
+    "chatId": "=",
+    "additionalFields": {
+     "appendAttribution": false
+    }
+   },
+   "credentials": {
+    "telegramApi": {
+     "id": "credential-id",
+     "name": "telegramApi Credential"
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "ebbd24e5-d595-4a15-9bea-8368dc76954c",
+   "name": "Generate Linkedin post",
+   "type": "n8n-nodes-base.executeWorkflow",
+   "position": [
+    3328,
+    4336
+   ],
+   "parameters": {
+    "options": {
+     "waitForSubWorkflow": false
+    },
+    "workflowId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "rT3gg6cJLS59Z7VG",
+     "cachedResultName": "LinkedIn Post gen"
+    },
+    "workflowInputs": {
+     "value": {},
+     "schema": [],
+     "mappingMode": "defineBelow",
+     "matchingColumns": [],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": true
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "3f1a2389-0e49-4fbf-991b-3ae9e7756d60",
+   "name": "Generate X post",
+   "type": "n8n-nodes-base.executeWorkflow",
+   "position": [
+    3328,
+    4528
+   ],
+   "parameters": {
+    "options": {
+     "waitForSubWorkflow": false
+    },
+    "workflowId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "mxRiIca87sDVSYYC",
+     "cachedResultName": "Multi platform repurpose"
+    },
+    "workflowInputs": {
+     "value": {},
+     "schema": [
+      {
+       "id": "Execute",
+       "type": "string",
+       "display": true,
+       "removed": true,
+       "required": false,
+       "displayName": "Execute",
+       "defaultMatch": false,
+       "canBeUsedToMatch": true
+      }
+     ],
+     "mappingMode": "defineBelow",
+     "matchingColumns": [
+      "Execute"
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": true
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "270d7800-ad63-4b94-a036-6628cf6e45fb",
+   "name": "Sticky Note16",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -624,
+    4144
+   ],
+   "parameters": {
+    "color": 7,
+    "width": 2512,
+    "height": 832,
+    "content": "# Search for necessary info \nAdd a`  When executed by another workflow  ` trigger node at the beginning\nThis will execute when triggered by `LinkedIn Post Gen` Workflow"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "832505a3-bc04-4a85-90b8-bf67ef773f6b",
+   "name": "Sticky Note17",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -544,
+    4272
+   ],
+   "parameters": {
+    "width": 640,
+    "height": 96,
+    "content": "## Free alternative of perplexity\nbrowseract.com\nworths more than it costs"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "a68e2767-48cf-4517-a494-af154ad8e05f",
+   "name": "Sticky Note20",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    1376,
+    4272
+   ],
+   "parameters": {
+    "width": 432,
+    "height": 96,
+    "content": "## Perplexity search\na bit costly but worth it"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "6df50d32-a057-4a7f-a317-797ab55dfda2",
+   "name": "Sticky Note24",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    2032,
+    4144
+   ],
+   "parameters": {
+    "color": 7,
+    "width": 2352,
+    "height": 832,
+    "content": "# Execute any SMS operation\n### This will execute when the user sends a query in a predefined structure to the dedicated SMS bot via Telegram"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "60ef7e77-a00e-4600-a7c8-092a3849e43b",
+   "name": "Sticky Note25",
+   "type": "n8n-nodes-base.stickyNote",
+   "disabled": true,
+   "position": [
+    3712,
+    4320
+   ],
+   "parameters": {
+    "width": 432,
+    "height": 336,
+    "content": "## Notify Wrong user For convenience\n"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "551a5479-e713-4cb9-b166-7340c9e0e012",
+   "name": "Sticky Note26",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -912,
+    3920
+   ],
+   "parameters": {
+    "color": 5,
+    "width": 5488,
+    "height": 144,
+    "content": "# System 6: Helper for SMS\n1. Search for necessary info/data for a LinkedIn post\n2. Works as a telegram trigger.\n"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "09d00e12-f9bf-4694-ab6c-e6b4f4b03eb0",
+   "name": "Sticky Note27",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -304,
+    4400
+   ],
+   "parameters": {
+    "color": 3,
+    "height": 320,
+    "content": "## Configure Me!\n- Create an agent in browseract.com\n- Get your API key for that agent\n- Make a credential (header Auth w Bearer YOUR_TOKEN_HERE)\n- Paste the Task ID in json fields"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "ffaa1213-910e-4985-8dca-4f388f515df7",
+   "name": "Sticky Note28",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -2160,
+    -1056
+   ],
+   "parameters": {
+    "color": 6,
+    "width": 944,
+    "height": 1472,
+    "content": "# 🚀 Welcome to Social Media Spark (SMS)\n\nThis is your **end-to-end social media content engine**.  \nIt discovers viral ideas in your niche, generates posts in your tone, repurposes for X, and auto-publishes — automating **90% of your content lifecycle**.\n---\n\n## ⚙️ Initial Setup & Credentials\n\nBefore running any part, configure these:\n\n- **AI Provider** (OpenAI / Gemini / OpenRouter) → used for scraping research, generating posts, repurposing content.\n- **Google Sheets** [Copy this sheet template](https://docs.google.com/spreadsheets/d/14yeNCC9M7SHN0XG8hgXxCSh9rDkzg_ywIlu_GcZgUu8/edit?usp=sharing)→ stores competitors, viral ideas, generated posts, and posting status.\n- **Google Drive** → saves generated images.\n- **Apify & Browseract** → scrapes LinkedIn and performs web research. (Create a simple agent in browseract just using a prompt. Take help from ChatGPT)\n- **LinkedIn API** → needed for auto-posting.\n- **X (Twitter)**   (Watch a tutorial on YT)\n  - Requires **OAuth 1.0a** for media uploads.  \n  - Also add **OAuth 2.0** for posting text tweets.\n- **Telegram Bot** → for on-demand triggers and notifications.\n\n💡 **Tip:** Look for nodes marked **“Configure Me!”** in each sub-workflow.\n---\n\n## ✅ Considerations & Best Practices (Do's and Don'ts)\n\n**DO:**\n* **Customize AI Prompts:** The most crucial step is to edit the system prompts in the AI Agent and LLM Chain nodes. Tailor the instructions about your niche, target audience, and personal tone to ensure the generated content is unique and authentic to you.\n* **Review Before Publishing:** Use the Google Sheet as a staging area. The workflow is designed for a Human-in-the-Loop (HitL) process. Always review the generated posts and set their status to \"Ready\" or \"Ready to post\" manually. This is your quality control.\n* **Secure Your Telegram Bot:** In System 6, set your personal `User ID` in the Telegram Trigger node. This ensures that only you can send commands to execute workflows.\n* **Adjust Schedules:** Check all the `ScheduleTrigger` (Cron) nodes and adjust them to a posting and scraping cadence that makes sense for you.\n\n**DON'T:**\n* **Don't Skip the \"Configure Me!\" Notes:** The workflow is littered with helpful sticky notes pointing to the exact nodes that require your input (like keywords for scraping). Don't ignore them.\n* **Don't Scrape Too Aggressively:** Be mindful of the scraping frequency in System 1 and 2 to respect platform limits and avoid potential blocks from Apify or LinkedIn. The default weekly schedule is a safe starting point.\n* **Don't Trust AI Blindly:** While powerful, the AI can sometimes produce content that is slightly off-brand or factually incorrect. The review step is your safety net.\n\n---\n\n## 💡 Options & Alternatives\n\nThis workflow is built for flexibility. Here are some built-in options you can explore:\n\n* **Language Models:** The workflows primarily use LangChain nodes, allowing you to easily switch between different models like **Google Gemini**, **Deepseek** (via OpenRouter), or any other supported LLM based on your preference for cost, speed, and quality.\n* **Web Research:** The primary research tool is **Browseract.com** (free). However, a disabled `Perplexity Research` (paid) node is included in System 6, which you can enable as a powerful (though potentially more costly) alternative for data gathering.\n* **Image Generation:** The main flow uses **Gemini's** image generation model for its ability to integrate with nano-banana. A disabled group in System 3 shows how you can swap this out for **OpenAI's DALL-E** if you prefer its output.\n"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "7ad49014-bb3b-41df-b076-9a4a63426c88",
+   "name": "Sticky Note29",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -2144,
+    1344
+   ],
+   "parameters": {
+    "color": 5,
+    "width": 944,
+    "height": 2432,
+    "content": "# EXPLANATION OF EACH SYSTEM\n\n## 🟩 PART 1 — The Foundation  \n### *(Initialization & Content Discovery — Systems 1 + 2)*\n\n### System 1: Initialization (Optional)\n- **Purpose:** Build a list of competitors or inspiration accounts from LinkedIn.\n- **How it works:**  \n  - Manual Trigger → HTTP Request (Apify) → scrape LinkedIn profiles.  \n  - Filter → keeps only profiles whose posts have > 100 likes.  \n  - Append → saves them to **“Competitors”** sheet.\n\n---\n\n### System 2: Content Discovery\n- **Purpose:** Fetches and classifies viral posts weekly.\n- **How it works:**  \n  - Triggered by **ScheduleTrigger (Sat 11 PM)** or via Telegram.  \n  - Reads competitor URLs from Google Sheets → scrapes posts via Apify.  \n  - Filters for > 100 likes → removes duplicates.  \n  - **Text Classifier** categorizes as `EvergreenAI` or `Personal/Other`.  \n  - Appends evergreen ideas to **“Viral Ideas”** sheet.  \n  - Telegram bot notifies when scraping is done.\n\n> ✅ **End of Part 1:** You now have a **live pipeline of viral ideas**.\n\n---\n\n## 🟧 PART 2 — The Creative Core  \n### *(Content Generation & On-Demand Ops — Systems 3 + 6)*\n\n### System 3: Generate LinkedIn Posts\n- **Purpose:** Turns each viral idea into a ready-to-publish LinkedIn post (text + image).\n- **How it works:**  \n  - Triggered by **ScheduleTrigger (Sun 1 AM)**.  \n  - Fetches “Ready” ideas from **Viral Ideas** sheet.  \n  - **LangChain Agent “Post repurpose”** rewrites content in your tone and also generates an image description.  \n  - **HTTP Request** calls Gemini Image API using the description + a reference minimalistic style image (from Drive).  \n  - Saves the post text + image link to **“Content Gen (LinkedIn)”** sheet.  \n  - Marks idea as **All Done**.\n\n---\n\n### System 6: Telegram Helper & Research\n- **Purpose:** Lets you command the system on-demand and fetch live research.\n- **How it works:**  \n  - **Telegram Trigger** → Switch routes commands like `/sms.linkedin`, `/sms.x`, `/sms.scrape`.  \n  - Executes relevant sub-workflow and sends a start-confirmation via Telegram.  \n  - For research: Calls **browseract.com** → loops until finished → returns clean result to the caller workflow.\n\n> ✅ **End of Part 2:** You can now **auto-generate posts** or **manually trigger them**.\n\n---\n\n## 🟦 PART 3 — Platform-Specific Repurposing  \n### *(Repurposing for X — System 4)*\n\n### System 4: Repurpose LinkedIn Post for X\n- **Purpose:** Converts LinkedIn posts into short, high-impact tweets.\n- **How it works:**  \n  - Triggered by **ScheduleTrigger (Sun 7 AM)**.  \n  - Fetches “Posted” LinkedIn content from **Content Gen (LinkedIn)** sheet.  \n  - **LangChain LLM Chain** repurposes into < 280-char X-friendly format → outputs JSON `{ \"post\": \"…\" }`.  \n  - Appends the tweet + original image link to **“Other handles”** sheet with status `Waiting`.  \n  - Marks original LinkedIn row as `All Done`.  \n  - Notifies via Telegram for human review.\n\n> ✅ **End of Part 3:** Your LinkedIn content is now **ready for cross-posting to X**.\n\n---\n\n## 🟨 PART 4 — The Finish Line  \n### *(Automated Publishing — System 5)*\n\n### System 5: Auto-Post to LinkedIn & X\n- **Purpose:** Publishes your prepared content automatically.\n- **How it works:**  \n  - **LinkedIn:**  \n    - ScheduleTrigger (6 PM) → picks first “Ready to post” row → downloads image from Drive → posts to LinkedIn → updates status to `Posted`.\n  - **X:**  \n    - ScheduleTrigger (6:30 PM) → picks first `Waiting` or `Ready` row.  \n    - If image is valid → uploads via **OAuth 1.0a Media Endpoint** → tweets with image.  \n    - Else → posts text-only tweet.  \n    - Updates sheet with `Posted` + date.\n\n> ✅ **End of Part 4:** Your system is now **publishing on autopilot**.\n\n---\n\n## 📦 Scaling & Best Practices\n- Always keep API keys secret **(Use proper Credentials instead of sending API keys in headers)** — don’t share them in screenshots or repos.\n- Use **Human-in-the-Loop** steps where brand voice is critical.\n- Review **Cron schedules** (weekend scraping, weekday posting) to match your workflow.\n- Extend by adding:\n  - Other platforms (Instagram, TikTok via Buffer)\n  - A/B testing prompts for tone and format\n  - Analytics logging for engagement metrics\n\n---\n\n🎉 **You now have a complete Social Media Spark engine — from discovering ideas to daily autoposting.**\n"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "b53aed64-bf3b-4894-9004-4157d95fd027",
+   "name": "Sticky Note30",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    -2160,
+    672
+   ],
+   "parameters": {
+    "color": 2,
+    "width": 960,
+    "height": 368,
+    "content": "## 💡Tips:\n- Create 4 different workflows.\n  1. **Scrape Idea + Auto post:**\nSystem 1 + system 5\n  2. **LinkedIn Post gen**\nSystem 3\n  3. **X repurpose**\nSystem 4\n  4. **Helper for SMS**\nSystem 6\n\n- Make sure to add `When Executed By Another Workflow` trigger in all the systems as mentioned in the notes"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "4c3de8e0-d577-44c7-8099-419cc20039e2",
+   "name": "Notify (HitL)",
+   "type": "n8n-nodes-base.telegram",
+   "position": [
+    2208,
+    -96
+   ],
+   "webhookId": "eb752f40-2bda-4e78-a0bc-ac625a2dbbd3",
+   "parameters": {
+    "text": "=Scraped viral posts of this week.\n\nPlease have a look on every post:\n<your_sheets_ID_where_scraped_posts_are_saved>\n\nSet **\"Status\"** > **\"Ready\"** to repurpose automatically.",
+    "chatId": "=6208595142",
+    "additionalFields": {
+     "appendAttribution": false
+    }
+   },
+   "credentials": {
+    "telegramApi": {
+     "id": "credential-id",
+     "name": "telegramApi Credential"
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "afc0501b-3ef1-4ff4-9f4b-4210107c7b92",
+   "name": "Sticky Note31",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    2160,
+    -256
+   ],
+   "parameters": {
+    "color": 3,
+    "height": 320,
+    "content": "## Configure Me!\n- Paste your telegram chatID in the `chat ID` field\n- Paste your specified sheet_ID in the `message` field"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "754c3767-5a99-4af2-82df-8c03cf87e00f",
+   "name": "Sticky Note34",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    4912,
+    1040
+   ],
+   "parameters": {
+    "color": 3,
+    "width": 246,
+    "height": 208,
+    "content": "## Paste your chatID"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "88c79887-8ba3-4d41-85eb-290cf02eb103",
+   "name": "Sticky Note35",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    6032,
+    768
+   ],
+   "parameters": {
+    "color": 3,
+    "width": 246,
+    "height": 208,
+    "content": "## Paste your chatID"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "5cdfbb8a-b22a-41e2-b10e-6ca3f3fdf9d6",
+   "name": "Sticky Note36",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    5808,
+    992
+   ],
+   "parameters": {
+    "color": 3,
+    "width": 246,
+    "height": 208,
+    "content": "## Paste your chatID"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "1bcf5f00-f56f-4fbc-9f10-61358d891c7c",
+   "name": "Sticky Note38",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    4976,
+    1824
+   ],
+   "parameters": {
+    "color": 3,
+    "width": 246,
+    "height": 208,
+    "content": "## Paste your chatID"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "07a68082-e2b1-4aba-aafa-256f563cfffa",
+   "name": "Notify (HitL)2",
+   "type": "n8n-nodes-base.telegram",
+   "position": [
+    656,
+    1920
+   ],
+   "webhookId": "eb752f40-2bda-4e78-a0bc-ac625a2dbbd3",
+   "parameters": {
+    "text": "=Generated *X* contents for this week.\n\nPlease have a look:\n<your_sheetID_where_X_contents_are_saved>\n\nSet *\"Status\"* > *\"Ready\"* to post automatically.",
+    "chatId": "=",
+    "additionalFields": {
+     "appendAttribution": false
+    }
+   },
+   "credentials": {
+    "telegramApi": {
+     "id": "credential-id",
+     "name": "telegramApi Credential"
+    }
+   },
+   "typeVersion": 1.2
+  },
+  {
+   "id": "32520434-1dce-4dfe-8942-56ddfbebfe32",
+   "name": "Sticky Note33",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    592,
+    1760
+   ],
+   "parameters": {
+    "color": 3,
+    "height": 320,
+    "content": "## Configure Me!\n- Paste your telegram chatID in the `chat ID` field\n- Paste your specified sheet_ID in the `message` field"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "c4b5bb34-deaf-4563-a0bc-8f5f0350062b",
+   "name": "Sticky Note37",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    752,
+    416
+   ],
+   "parameters": {
+    "color": 3,
+    "height": 320,
+    "content": "## Configure Me!\n- Paste your telegram chatID in the `chat ID` field\n- Paste your specified sheet_ID in the `message` field"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "c65638c0-5a46-4f81-b2b6-6f8f9983e386",
+   "name": "Sticky Note39",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    2880,
+    4256
+   ],
+   "parameters": {
+    "color": 3,
+    "width": 246,
+    "height": 208,
+    "content": "## Paste your chatID"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "cd4c4ed1-949f-418f-a4d1-7b7e8b18cf30",
+   "name": "Sticky Note40",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    2864,
+    4736
+   ],
+   "parameters": {
+    "color": 3,
+    "width": 246,
+    "height": 208,
+    "content": "## Paste your chatID"
+   },
+   "typeVersion": 1
+  },
+  {
+   "id": "6806288a-fdad-4164-bd9e-3f414e0f555d",
+   "name": "Sticky Note41",
+   "type": "n8n-nodes-base.stickyNote",
+   "position": [
+    2400,
+    4512
+   ],
+   "parameters": {
+    "color": 3,
+    "width": 246,
+    "height": 208,
+    "content": "## Paste your chatID"
+   },
+   "typeVersion": 1
+  }
+ ],
+ "connections": {
+  "6 pm": {
+   "main": [
+    [
+     {
+      "node": "Get content1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "1 min": {
+   "main": [
+    [
+     {
+      "node": "Get task status",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Switch": {
+   "main": [
+    [
+     {
+      "node": "get output",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Error",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Error",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Error",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Error",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Get task status",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Get task status",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "6:30 pm": {
+   "main": [
+    [
+     {
+      "node": "Get valid content",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "If Dipt": {
+   "main": [
+    [],
+    [
+     {
+      "node": "Wrong user",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "All Done": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "get base": {
+   "main": [
+    [
+     {
+      "node": "Pic exist?1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "set base": {
+   "main": [
+    [
+     {
+      "node": "get base",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "HTTP- Gemini1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Aggregate": {
+   "main": [
+    [
+     {
+      "node": "Scrape viral posts",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Deepseek1": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "Post repurpose",
+      "type": "ai_languageModel",
+      "index": 1
+     }
+    ]
+   ]
+  },
+  "Deepseek2": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "Post generator",
+      "type": "ai_languageModel",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Deepseek3": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "Content repurpose",
+      "type": "ai_languageModel",
+      "index": 1
+     }
+    ]
+   ]
+  },
+  "Deepseek4": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "Content repurpose1",
+      "type": "ai_languageModel",
+      "index": 1
+     }
+    ]
+   ]
+  },
+  "Get image": {
+   "main": [
+    [
+     {
+      "node": "Upload image to X",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Reasearch": {
+   "ai_tool": [
+    [
+     {
+      "node": "Post repurpose",
+      "type": "ai_tool",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Post": {
+   "main": [
+    [
+     {
+      "node": "Mark Idea as Done",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  ">100 likes": {
+   "main": [
+    [
+     {
+      "node": "Edit Fields",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Aggregate1": {
+   "main": [
+    [
+     {
+      "node": "Notify (HitL)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Aggregate2": {
+   "main": [
+    [
+     {
+      "node": "Notify (HitL)1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Aggregate3": {
+   "main": [
+    [
+     {
+      "node": "Notify (HitL)2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Gemini pro": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "Content repurpose",
+      "type": "ai_languageModel",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Pic exist?": {
+   "main": [
+    [
+     {
+      "node": "Convert to File1",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Set content",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Reasearch1": {
+   "ai_tool": [
+    [
+     {
+      "node": "Post generator",
+      "type": "ai_tool",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Image": {
+   "main": [
+    [
+     {
+      "node": "Set content",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Sunday 7am": {
+   "main": [
+    [
+     {
+      "node": "Get content",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "get base64": {
+   "main": [
+    [
+     {
+      "node": "Pic exist?",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Set content",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "get output": {
+   "main": [
+    [
+     {
+      "node": "Output",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "set base64": {
+   "main": [
+    [
+     {
+      "node": "HTTP- Gemini",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  ">100 likes1": {
+   "main": [
+    [
+     {
+      "node": "Remove Duplicates",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Append post": {
+   "main": [
+    [
+     {
+      "node": "All Done",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create task": {
+   "main": [
+    [
+     {
+      "node": "1 min",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Edit Fields": {
+   "main": [
+    [
+     {
+      "node": "Add competitors",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Gemini pro1": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "Content repurpose1",
+      "type": "ai_languageModel",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Generated ?": {
+   "main": [
+    [
+     {
+      "node": "Minimalistic",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Loop Over Items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get content": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Operation ?": {
+   "main": [
+    [
+     {
+      "node": "Generate Linkedin post",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Start notif",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Generate X post",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Start notif",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Execute post scraper",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Start notif",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Incorrect input",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Pic exist?1": {
+   "main": [
+    [
+     {
+      "node": "Convert to File2",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "no pic",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Set content": {
+   "main": [
+    [
+     {
+      "node": "Save Post",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Sunday 1 AM": {
+   "main": [
+    [
+     {
+      "node": "Get Viral Ideas",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Tweet": {
+   "main": [
+    [
+     {
+      "node": "Update status1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Edit Fields1": {
+   "main": [
+    [
+     {
+      "node": "Aggregate",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Edit Fields2": {
+   "main": [
+    [
+     {
+      "node": "Text Classifier",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Edit Fields3": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Edit Fields4": {
+   "main": [
+    [
+     {
+      "node": "Send post1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Edit Fields5": {
+   "main": [
+    [
+     {
+      "node": "Content repurpose",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Edit Fields6": {
+   "main": [
+    [
+     {
+      "node": "Append post",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Gemini flash": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "Text Classifier",
+      "type": "ai_languageModel",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Generated ?1": {
+   "main": [
+    [
+     {
+      "node": "Edit Fields6",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Loop Over Items1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Generated ?2": {
+   "main": [
+    [
+     {
+      "node": "Edit Fields4",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get content1": {
+   "main": [
+    [
+     {
+      "node": "Download file",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP- Gemini": {
+   "main": [
+    [
+     {
+      "node": "get base64",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Set content",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Image valid?": {
+   "main": [
+    [
+     {
+      "node": "Get image",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Create Tweet1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Minimalistic": {
+   "main": [
+    [
+     {
+      "node": "set base64",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "OpenAI Image": {
+   "main": [
+    [
+     {
+      "node": "Convert to File",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "append ideas": {
+   "main": [
+    [
+     {
+      "node": "Aggregate1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Tweet1": {
+   "main": [
+    [
+     {
+      "node": "Update status2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create a post": {
+   "main": [
+    [
+     {
+      "node": "Update status",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Download file": {
+   "main": [
+    [
+     {
+      "node": "Create a post",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Gemini flash1": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "Structured Output Parser",
+      "type": "ai_languageModel",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Gemini flash2": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "Structured Output Parser2",
+      "type": "ai_languageModel",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Gemini flash3": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "Structured Output Parser3",
+      "type": "ai_languageModel",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP- Gemini1": {
+   "main": [
+    [
+     {
+      "node": "get base",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "no pic",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Minimalistic1": {
+   "main": [
+    [
+     {
+      "node": "set base",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Update status": {
+   "main": [
+    [
+     {
+      "node": "Notify user",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Gemini 2.5 pro": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "Post repurpose",
+      "type": "ai_languageModel",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Manual Trigger": {
+   "main": [
+    [
+     {
+      "node": "Find competitors",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Post generator": {
+   "main": [
+    [
+     {
+      "node": "Send post",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Minimalistic1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Post repurpose": {
+   "main": [
+    [
+     {
+      "node": "Generated ?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Saturday 11 PM": {
+   "main": [
+    [
+     {
+      "node": "Get competitors",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Gemini 2.5 pro1": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "Post generator",
+      "type": "ai_languageModel",
+      "index": 1
+     },
+     {
+      "node": "Structured Output Parser1",
+      "type": "ai_languageModel",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Viral Ideas": {
+   "main": [
+    [
+     {
+      "node": "Edit Fields3",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get competitors": {
+   "main": [
+    [
+     {
+      "node": "Edit Fields1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get task status": {
+   "main": [
+    [
+     {
+      "node": "get output",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Loop Over Items": {
+   "main": [
+    [
+     {
+      "node": "Aggregate2",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Post repurpose",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Text Classifier": {
+   "main": [
+    [
+     {
+      "node": "append ideas",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Convert to File1": {
+   "main": [
+    [
+     {
+      "node": "Save Image",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Convert to File2": {
+   "main": [
+    [
+     {
+      "node": "Send image",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Find competitors": {
+   "main": [
+    [
+     {
+      "node": ">100 likes",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Loop Over Items1": {
+   "main": [
+    [
+     {
+      "node": "Aggregate3",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Edit Fields5",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Telegram Trigger": {
+   "main": [
+    [
+     {
+      "node": "Operation ?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Telegram trigger": {
+   "main": [
+    [
+     {
+      "node": "Get competitors",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Content repurpose": {
+   "main": [
+    [
+     {
+      "node": "Generated ?1",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Loop Over Items1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get valid content": {
+   "main": [
+    [
+     {
+      "node": "Image valid?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Mark Idea as Done": {
+   "main": [
+    [
+     {
+      "node": "Loop Over Items",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Remove Duplicates": {
+   "main": [
+    [
+     {
+      "node": "Edit Fields2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Upload image to X": {
+   "main": [
+    [
+     {
+      "node": "Create Tweet",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Content repurpose1": {
+   "main": [
+    [
+     {
+      "node": "Generated ?2",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Scrape viral posts": {
+   "main": [
+    [
+     {
+      "node": ">100 likes1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Perplexity Research": {
+   "main": [
+    [
+     {
+      "node": "Output1",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Structured Output Parser": {
+   "ai_outputParser": [
+    [
+     {
+      "node": "Post repurpose",
+      "type": "ai_outputParser",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Structured Output Parser1": {
+   "ai_outputParser": [
+    [
+     {
+      "node": "Post generator",
+      "type": "ai_outputParser",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Structured Output Parser2": {
+   "ai_outputParser": [
+    [
+     {
+      "node": "Content repurpose",
+      "type": "ai_outputParser",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Structured Output Parser3": {
+   "ai_outputParser": [
+    [
+     {
+      "node": "Content repurpose1",
+      "type": "ai_outputParser",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ }
+}
