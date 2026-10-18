@@ -81,6 +81,7 @@ export const AI_PORT_ALIASES: Record<string, string> = {
 };
 
 function regionTag(ctx: LensContext, name: string, here?: Region): string {
+  if (ctx.regions.regions.length < 2) return '';
   const region = ctx.regions.regionOf.get(name);
   return region && region !== here ? ` [${region.id}]` : '';
 }
