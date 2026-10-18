@@ -1,8 +1,10 @@
 /**
  * Handlers for the workflow lens tools.
  *
- * `n8n_inspect_workflow` returns plain text views of a live workflow (see src/lens). Success
- * results are strings so the server sends them as-is instead of pretty-printed JSON.
+ * `n8n_inspect_workflow` returns plain text views of a live workflow (see src/lens).
+ * `n8n_compose_workflow` creates or extends a workflow from compact notation (see src/compose),
+ * writing through the existing create handler and diff engine.
+ * Success results are strings so the server sends them as-is instead of pretty-printed JSON.
  */
 
 import { z } from 'zod';
@@ -12,6 +14,14 @@ import { McpToolResponse, Workflow } from '../types/n8n-api';
 import { N8nApiError, getUserFriendlyErrorMessage } from '../utils/n8n-errors';
 import { inspect, LensInputError, NodeOutput, outputsFromExecution } from '../lens';
 import { logger } from '../utils/logger';
+import { normalizeMcpJsonValue } from '../utils/mcp-input-normalizer';
+import { NodeRepository } from '../database/node-repository';
+import { WorkflowValidator, WorkflowValidationResult } from '../services/workflow-validator';
+import { EnhancedConfigValidator } from '../services/enhanced-config-validator';
+import { compileCreate, compileExtend, ComposeSpec } from '../compose/compile';
+import { NotationError } from '../compose/notation';
+import { handleCreateWorkflow } from './handlers-n8n-manager';
+import { handleUpdatePartialWorkflow } from './handlers-workflow-diff';
 
 const inspectSchema = z.object({
   id: z.string().min(1),
@@ -31,7 +41,7 @@ function errorResponse(error: unknown): McpToolResponse {
   if (error instanceof N8nApiError) {
     return { success: false, error: getUserFriendlyErrorMessage(error), code: error.code };
   }
-  if (error instanceof LensInputError) {
+  if (error instanceof LensInputError || error instanceof NotationError) {
     return { success: false, error: error.message };
   }
   return { success: false, error: error instanceof Error ? error.message : 'Unknown error occurred' };
@@ -82,6 +92,96 @@ export async function handleInspectWorkflow(args: unknown, context?: InstanceCon
       outputs: run.outputs,
       outputsLabel: run.label,
     });
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+const json = <T extends z.ZodTypeAny>(schema: T) => z.preprocess(normalizeMcpJsonValue, schema);
+
+const composeSchema = z.object({
+  workflowId: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
+  nodes: json(z.record(z.string(), json(z.object({
+    type: z.string().optional(),
+    v: z.number().optional(),
+    params: json(z.record(z.string(), z.unknown())).optional(),
+    credentials: json(z.record(z.string(), z.unknown())).optional(),
+    position: json(z.tuple([z.number(), z.number()])).optional(),
+    disabled: z.boolean().optional(),
+    onError: z.enum(['continueRegularOutput', 'continueErrorOutput', 'stopWorkflow']).optional(),
+    notes: z.string().optional(),
+    retryOnFail: z.boolean().optional(),
+    maxTries: z.number().optional(),
+    waitBetweenTries: z.number().optional(),
+    alwaysOutputData: z.boolean().optional(),
+    executeOnce: z.boolean().optional(),
+  }).strict()))).optional(),
+  flow: json(z.array(z.string())).optional(),
+  remove: json(z.array(z.string())).optional(),
+  unlink: json(z.array(z.string())).optional(),
+  settings: json(z.record(z.string(), z.unknown())).optional(),
+});
+
+const MAX_WARNINGS = 8;
+
+function formatValidation(result: WorkflowValidationResult): string {
+  const errors = result.errors.length;
+  const warnings = result.warnings.length;
+  if (errors === 0 && warnings === 0) return 'validation: ok';
+  const lines = [`validation: ${errors} error${errors === 1 ? '' : 's'}, ${warnings} warning${warnings === 1 ? '' : 's'}`];
+  for (const issue of result.errors) lines.push(`  error ${issue.nodeName ?? 'workflow'}: ${issue.message}`);
+  for (const issue of result.warnings.slice(0, MAX_WARNINGS)) lines.push(`  warn  ${issue.nodeName ?? 'workflow'}: ${issue.message}`);
+  if (warnings > MAX_WARNINGS) lines.push(`  +${warnings - MAX_WARNINGS} more warnings (n8n_validate_workflow lists all)`);
+  return lines.join('\n');
+}
+
+async function validate(workflow: Workflow, repository: NodeRepository): Promise<WorkflowValidationResult> {
+  const validator = new WorkflowValidator(repository, EnhancedConfigValidator);
+  return validator.validateWorkflow(workflow as any, { profile: 'runtime' });
+}
+
+const NEXT = (id: string) =>
+  `next: n8n_inspect_workflow id=${id} view=outline to review | to fix or extend, call n8n_compose_workflow with workflowId=${id} and only the nodes/flow that change`;
+
+export async function handleComposeWorkflow(args: unknown, repository: NodeRepository, context?: InstanceContext): Promise<McpToolResponse | string> {
+  try {
+    const spec = composeSchema.parse(args) as ComposeSpec;
+
+    if (!spec.workflowId) {
+      const plan = compileCreate(spec, repository);
+      const validation = await validate(plan.workflow as Workflow, repository);
+      const created = await handleCreateWorkflow(plan.workflow, context);
+      if (!created.success) return created;
+      const id = String((created.data as { id: string }).id);
+      return [
+        `created "${plan.workflow.name}" id=${id}: ${plan.workflow.nodes.length} nodes, ${plan.edges.length} connections`,
+        formatValidation(validation),
+        NEXT(id),
+      ].join('\n');
+    }
+
+    const client = getN8nApiClient(context);
+    if (!client) throw new Error('n8n API not configured. Please set N8N_API_URL and N8N_API_KEY environment variables.');
+    const current = (await client.getWorkflow(spec.workflowId)) as Workflow;
+    const plan = compileExtend(spec, current, repository);
+    if (plan.operations.length === 0) return `nothing to change in "${current.name}" id=${spec.workflowId}`;
+
+    const applied = await handleUpdatePartialWorkflow({ id: spec.workflowId, operations: plan.operations }, repository, context);
+    if (!applied.success) return applied;
+    const updated = (await client.getWorkflow(spec.workflowId)) as Workflow;
+    const parts = [
+      plan.added.length ? `added ${plan.added.join(', ')}` : '',
+      plan.updated.length ? `updated ${plan.updated.join(', ')}` : '',
+      plan.removed.length ? `removed ${plan.removed.join(', ')}` : '',
+      plan.linked ? `+${plan.linked} connections` : '',
+      plan.unlinked ? `-${plan.unlinked} connections` : '',
+    ].filter(Boolean);
+    return [
+      `updated "${updated.name}" id=${spec.workflowId}: ${parts.join('; ')} (${updated.nodes.length} nodes now)`,
+      formatValidation(await validate(updated, repository)),
+      NEXT(spec.workflowId),
+    ].join('\n');
   } catch (error) {
     return errorResponse(error);
   }

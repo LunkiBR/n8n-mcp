@@ -54,7 +54,10 @@ function baseOutputCount(node: WorkflowNode): number {
 export function outputLabel(node: WorkflowNode, output: number): string {
   const type = shortType(node.type);
   const p = (node.parameters ?? {}) as Record<string, any>;
-  if (node.onError === 'continueErrorOutput' && output >= baseOutputCount(node)) return 'error';
+  if (node.onError === 'continueErrorOutput') {
+    if (output >= baseOutputCount(node)) return 'error';
+    if (baseOutputCount(node) === 1) return 'success';
+  }
   if (type === 'if') return output === 0 ? 'true' : 'false';
   if (type === 'filter') return output === 0 ? 'kept' : 'discarded';
   if (type === 'splitInBatches' && (node.typeVersion ?? 1) >= 3) return output === 0 ? 'done' : 'loop';

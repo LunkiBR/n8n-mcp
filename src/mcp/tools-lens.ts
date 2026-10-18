@@ -35,4 +35,31 @@ export const lensTools: ToolDefinition[] = [
       openWorldHint: true,
     },
   },
+  {
+    name: 'n8n_compose_workflow',
+    description: `Create a workflow, or extend/edit one (workflowId), from compact notation instead of full n8n JSON. nodes: object keyed by node name -> {type, params, credentials?, v?, onError?, disabled?}. type is a short name ('webhook', 'httpRequest', 'code', 'if', 'switch', 'set', 'splitInBatches', 'agent', 'lmChatOpenAi', 'toolCode') or a full type; typeVersion defaults to the latest; positions are laid out automatically. params are the node's parameters as n8n stores them (check get_node when unsure). flow: lines like "Webhook -> Score -> Is Hot", "Is Hot.true -> Notify", "Is Hot.false -> Log", "Loop.loop -> Step", "Switch.2 -> X", "A -> Merge[1]" (input 1), "HTTP.error -> Alert" (needs onError='continueErrorOutput'), "Model =model=> Agent", "Tool =tool=> Agent" (ports: model, tool, memory, parser, embedding, retriever, vectorStore, document, textSplitter). With workflowId: listed new nodes are added and placed next to their neighbors, listed existing nodes get the given params keys replaced (dot keys like 'options.timeout' set nested values), flow adds connections, remove deletes nodes, unlink removes connections. Returns ids, a validation summary by node, and the next step; no workflow echo. Build big workflows in several calls, one stage at a time.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        workflowId: { type: 'string', description: 'Existing workflow to extend or edit; omit to create a new one' },
+        name: { type: 'string', description: 'Workflow name (required when creating)' },
+        nodes: {
+          type: 'object',
+          description: 'Node name -> {type, params, credentials, v, onError, disabled, notes, retryOnFail, position}',
+          additionalProperties: { type: 'object' },
+        },
+        flow: { type: 'array', items: { type: 'string' }, description: 'Connections in arrow notation' },
+        remove: { type: 'array', items: { type: 'string' }, description: 'Node names to delete (with workflowId)' },
+        unlink: { type: 'array', items: { type: 'string' }, description: 'Connections to remove, same arrow notation (with workflowId)' },
+        settings: { type: 'object', description: 'Workflow settings to set, e.g. {"timezone": "UTC"}' },
+      },
+    },
+    annotations: {
+      title: 'Compose Workflow',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+  },
 ];
