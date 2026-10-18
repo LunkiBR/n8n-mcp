@@ -125,14 +125,25 @@ const composeSchema = z.object({
 
 const MAX_WARNINGS = 8;
 
-function formatValidation(result: WorkflowValidationResult): string {
-  const errors = result.errors.length;
-  const warnings = result.warnings.length;
-  if (errors === 0 && warnings === 0) return 'validation: ok';
-  const lines = [`validation: ${errors} error${errors === 1 ? '' : 's'}, ${warnings} warning${warnings === 1 ? '' : 's'}`];
-  for (const issue of result.errors) lines.push(`  error ${issue.nodeName ?? 'workflow'}: ${issue.message}`);
-  for (const issue of result.warnings.slice(0, MAX_WARNINGS)) lines.push(`  warn  ${issue.nodeName ?? 'workflow'}: ${issue.message}`);
-  if (warnings > MAX_WARNINGS) lines.push(`  +${warnings - MAX_WARNINGS} more warnings (n8n_validate_workflow lists all)`);
+const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
+const issueKey = (issue: { nodeName?: string; message: string }) => `${issue.nodeName ?? ''}\u0000${issue.message}`;
+
+/**
+ * Validation summary. With `before`, only issues the change introduced are listed; issues the
+ * workflow already had are counted, since repeating them on every edit buries the new ones.
+ */
+function formatValidation(result: WorkflowValidationResult, before?: WorkflowValidationResult): string {
+  const known = new Set([...(before?.errors ?? []), ...(before?.warnings ?? [])].map(issueKey));
+  const errors = result.errors.filter(i => !known.has(issueKey(i)));
+  const warnings = result.warnings.filter(i => !known.has(issueKey(i)));
+  const oldErrors = result.errors.length - errors.length;
+  const oldWarnings = result.warnings.length - warnings.length;
+  const preexisting = oldErrors || oldWarnings ? `; already present before this change: ${plural(oldErrors, 'error')}, ${plural(oldWarnings, 'warning')}` : '';
+  if (errors.length === 0 && warnings.length === 0) return `validation: ok${before ? ' (no new issues)' : ''}${preexisting}`;
+  const lines = [`validation: ${plural(errors.length, before ? 'new error' : 'error')}, ${plural(warnings.length, before ? 'new warning' : 'warning')}${preexisting}`];
+  for (const issue of errors) lines.push(`  error ${issue.nodeName ?? 'workflow'}: ${issue.message}`);
+  for (const issue of warnings.slice(0, MAX_WARNINGS)) lines.push(`  warn  ${issue.nodeName ?? 'workflow'}: ${issue.message}`);
+  if (warnings.length > MAX_WARNINGS) lines.push(`  +${warnings.length - MAX_WARNINGS} more warnings (n8n_validate_workflow lists all)`);
   return lines.join('\n');
 }
 
@@ -166,6 +177,7 @@ export async function handleComposeWorkflow(args: unknown, repository: NodeRepos
     const current = (await client.getWorkflow(spec.workflowId)) as Workflow;
     const plan = compileExtend(spec, current, repository);
     if (plan.operations.length === 0) return `nothing to change in "${current.name}" id=${spec.workflowId}`;
+    const before = await validate(current, repository);
 
     const applied = await handleUpdatePartialWorkflow({ id: spec.workflowId, operations: plan.operations }, repository, context);
     if (!applied.success) return applied;
@@ -179,7 +191,7 @@ export async function handleComposeWorkflow(args: unknown, repository: NodeRepos
     ].filter(Boolean);
     return [
       `updated "${updated.name}" id=${spec.workflowId}: ${parts.join('; ')} (${updated.nodes.length} nodes now)`,
-      formatValidation(await validate(updated, repository)),
+      formatValidation(await validate(updated, repository), before),
       NEXT(spec.workflowId),
     ].join('\n');
   } catch (error) {

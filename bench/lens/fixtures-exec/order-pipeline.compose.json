@@ -1,0 +1,63 @@
+{
+  "name": "Order pipeline",
+  "nodes": {
+    "Orders In": { "type": "webhook", "params": { "path": "__PATH__", "httpMethod": "POST", "responseMode": "onReceived", "options": {} } },
+    "Has Orders?": { "type": "if", "params": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" }, "combinator": "and", "conditions": [{ "id": "c0", "leftValue": "={{ $json.body.orders.length }}", "rightValue": 0, "operator": { "type": "number", "operation": "gt" } }] }, "looseTypeValidation": true, "options": {} } },
+    "Reject Empty": { "type": "set", "params": { "assignments": { "assignments": [{ "id": "r1", "name": "error", "value": "no orders", "type": "string" }] }, "options": {} } },
+    "Config": { "type": "set", "params": { "assignments": { "assignments": [
+      { "id": "k1", "name": "discount_rte", "value": 0.1, "type": "number" },
+      { "id": "k2", "name": "tax_eu", "value": 0.2, "type": "number" },
+      { "id": "k3", "name": "tax_us", "value": 0.07, "type": "number" },
+      { "id": "k4", "name": "vip_threshold", "value": 500, "type": "number" },
+      { "id": "k5", "name": "currency", "value": "EUR", "type": "string" }
+    ] }, "options": {} } },
+    "Explode Orders": { "type": "code", "params": { "jsCode": "const orders = $('Orders In').first().json.body.orders;\nreturn orders.map(o => ({ json: o }));" } },
+    "Normalize": { "type": "set", "params": { "includeOtherFields": true, "assignments": { "assignments": [
+      { "id": "n1", "name": "region", "value": "={{ String($json.region || 'other').toLowerCase() }}", "type": "string" },
+      { "id": "n2", "name": "amount", "value": "={{ Number($json.amount) }}", "type": "number" },
+      { "id": "n3", "name": "sku", "value": "={{ String($json.sku).toUpperCase() }}", "type": "string" }
+    ] }, "options": {} } },
+    "Enrich SKU": { "type": "code", "params": { "jsCode": "const catalog = { 'A-1': 'Widget', 'B-2': 'Gadget', 'C-3': 'Gizmo' };\nreturn $input.all().map(i => ({ json: { ...i.json, product: catalog[i.json.sku] || 'Unknown' } }));" } },
+    "Route Region": { "type": "switch", "params": { "rules": { "values": [
+      { "outputKey": "eu", "renameOutput": true, "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "combinator": "and", "conditions": [{ "id": "s1", "leftValue": "={{ $json.region }}", "rightValue": "eu", "operator": { "type": "string", "operation": "equals" } }] } },
+      { "outputKey": "us", "renameOutput": true, "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "combinator": "and", "conditions": [{ "id": "s2", "leftValue": "={{ $json.region }}", "rightValue": "us", "operator": { "type": "string", "operation": "equals" } }] } }
+    ] }, "options": { "fallbackOutput": "extra" } } },
+    "EU Tax": { "type": "set", "params": { "includeOtherFields": true, "assignments": { "assignments": [{ "id": "t1", "name": "tax", "value": "={{ $json.amount * $('Config').item.json.tax_eu }}", "type": "number" }] }, "options": {} } },
+    "US Tax": { "type": "set", "params": { "includeOtherFields": true, "assignments": { "assignments": [{ "id": "t2", "name": "tax", "value": "={{ $json.amount * $('Config').item.json.tax_us }}", "type": "number" }] }, "options": {} } },
+    "No Tax": { "type": "set", "params": { "includeOtherFields": true, "assignments": { "assignments": [{ "id": "t3", "name": "tax", "value": 0, "type": "number" }] }, "options": {} } },
+    "Merge Regions": { "type": "merge", "params": { "numberInputs": 3 } },
+    "Round Tax": { "type": "code", "params": { "jsCode": "return $input.all().map(i => ({ json: { ...i.json, tax: Math.round(i.json.tax * 100) / 100 } }));" } },
+    "Apply Discount": { "type": "code", "params": { "jsCode": "const rate = $('Config').first().json.discount_rate;\nreturn $input.all().map(i => {\n  const gross = i.json.amount + i.json.tax;\n  const total = gross * (1 - rate);\n  return { json: { ...i.json, gross, total_after_discount: Math.round(total * 100) / 100 } };\n});" } },
+    "Stamp Currency": { "type": "set", "params": { "includeOtherFields": true, "assignments": { "assignments": [{ "id": "c1", "name": "currency", "value": "={{ $('Config').item.json.currency }}", "type": "string" }] }, "options": {} } },
+    "Score Risk": { "type": "code", "params": { "jsCode": "return $input.all().map(i => ({ json: { ...i.json, risk: i.json.amount > 900 ? 'high' : 'low' } }));" } },
+    "Risk Gate": { "type": "if", "params": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "combinator": "and", "conditions": [{ "id": "g1", "leftValue": "={{ $json.risk }}", "rightValue": "high", "operator": { "type": "string", "operation": "equals" } }] }, "options": {} } },
+    "Hold For Review": { "type": "set", "params": { "includeOtherFields": true, "assignments": { "assignments": [{ "id": "h1", "name": "status", "value": "held", "type": "string" }] }, "options": {} } },
+    "Approve": { "type": "set", "params": { "includeOtherFields": true, "assignments": { "assignments": [{ "id": "h2", "name": "status", "value": "approved", "type": "string" }] }, "options": {} } },
+    "Merge Status": { "type": "merge", "params": {} },
+    "Big Order?": { "type": "if", "params": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" }, "combinator": "and", "conditions": [{ "id": "b1", "leftValue": "={{ $json.total_after_discount }}", "rightValue": "={{ $('Config').item.json.vip_threshold }}", "operator": { "type": "number", "operation": "gt" } }] }, "looseTypeValidation": true, "options": {} } },
+    "Flag VIP": { "type": "set", "params": { "includeOtherFields": true, "assignments": { "assignments": [{ "id": "v1", "name": "vip", "value": true, "type": "boolean" }] }, "options": {} } },
+    "Flag Standard": { "type": "set", "params": { "includeOtherFields": true, "assignments": { "assignments": [{ "id": "v2", "name": "vip", "value": false, "type": "boolean" }] }, "options": {} } },
+    "Merge Flags": { "type": "merge", "params": {} },
+    "Each Order": { "type": "splitInBatches", "params": { "batchSize": 2, "options": {} } },
+    "Audit Line": { "type": "code", "params": { "jsCode": "return $input.all().map(i => ({ json: { ...i.json, audited: true } }));" } },
+    "Summarize": { "type": "code", "params": { "jsCode": "const rows = $input.all().map(i => i.json);\nconst sum = rows.reduce((s, r) => s + (r.total_after_discount || 0), 0);\nreturn [{ json: { orders: rows.length, total: Math.round(sum * 100) / 100, vip: rows.filter(r => r.vip).length } }];" } },
+    "Done": { "type": "noOp" }
+  },
+  "flow": [
+    "Orders In -> Has Orders?",
+    "Has Orders?.false -> Reject Empty",
+    "Has Orders?.true -> Config -> Explode Orders -> Normalize -> Enrich SKU -> Route Region",
+    "Route Region.eu -> EU Tax -> Merge Regions",
+    "Route Region.us -> US Tax -> Merge Regions[1]",
+    "Route Region.2 -> No Tax -> Merge Regions[2]",
+    "Merge Regions -> Round Tax -> Apply Discount -> Stamp Currency -> Score Risk -> Risk Gate",
+    "Risk Gate.true -> Hold For Review -> Merge Status",
+    "Risk Gate.false -> Approve -> Merge Status[1]",
+    "Merge Status -> Big Order?",
+    "Big Order?.true -> Flag VIP -> Merge Flags",
+    "Big Order?.false -> Flag Standard -> Merge Flags[1]",
+    "Merge Flags -> Each Order",
+    "Each Order.loop -> Audit Line -> Each Order",
+    "Each Order.done -> Summarize -> Done"
+  ]
+}

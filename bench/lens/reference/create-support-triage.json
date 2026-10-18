@@ -1,0 +1,41 @@
+{
+  "name": "__NAME__",
+  "nodes": {
+    "Ticket In": {"type": "webhook", "params": {"path": "__PATH__", "httpMethod": "POST", "options": {}}},
+    "Normalize Ticket": {"type": "set", "params": {"assignments": {"assignments": [
+      {"id": "f1", "name": "subject", "value": "={{ $json.body.subject }}", "type": "string"},
+      {"id": "f2", "name": "body", "value": "={{ $json.body.body }}", "type": "string"},
+      {"id": "f3", "name": "customer_email", "value": "={{ $json.body.customer_email }}", "type": "string"}]}, "options": {}}},
+    "Classifier": {"type": "agent", "params": {"promptType": "define", "text": "=Classify this support ticket.\nSubject: {{ $json.subject }}\nBody: {{ $json.body }}", "hasOutputParser": true, "options": {"systemMessage": "Return category (billing, bug or other) and urgency from 1 to 5."}}},
+    "OpenAI": {"type": "lmChatOpenAi", "params": {"model": {"__rl": true, "mode": "list", "value": "gpt-4o-mini"}, "options": {}}},
+    "Parse Result": {"type": "outputParserStructured", "params": {"jsonSchemaExample": "{\"category\": \"billing\", \"urgency\": 3}"}},
+    "Route Category": {"type": "switch", "params": {"rules": {"values": [
+      {"outputKey": "billing", "renameOutput": true, "conditions": {"options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"}, "combinator": "and", "conditions": [{"id": "r1", "leftValue": "={{ $json.output.category }}", "rightValue": "billing", "operator": {"type": "string", "operation": "equals"}}]}},
+      {"outputKey": "bug", "renameOutput": true, "conditions": {"options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"}, "combinator": "and", "conditions": [{"id": "r2", "leftValue": "={{ $json.output.category }}", "rightValue": "bug", "operator": {"type": "string", "operation": "equals"}}]}},
+      {"outputKey": "other", "renameOutput": true, "conditions": {"options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"}, "combinator": "and", "conditions": [{"id": "r3", "leftValue": "={{ $json.output.category }}", "rightValue": "other", "operator": {"type": "string", "operation": "equals"}}]}}]}, "options": {}}},
+    "Billing Desk": {"type": "httpRequest", "params": {"method": "POST", "url": "https://example.com/billing", "options": {}}},
+    "Bug Tracker": {"type": "httpRequest", "params": {"method": "POST", "url": "https://example.com/bugs", "options": {}}, "onError": "continueErrorOutput"},
+    "Bug Intake Failed": {"type": "set", "params": {"assignments": {"assignments": [{"id": "e1", "name": "error", "value": "={{ $json.error.message }}", "type": "string"}]}, "options": {}}},
+    "Ignore": {"type": "noOp"},
+    "Urgent?": {"type": "if", "params": {"conditions": {"options": {"caseSensitive": true, "leftValue": "", "typeValidation": "loose"}, "combinator": "and", "conditions": [{"id": "u1", "leftValue": "={{ $('Classifier').item.json.output.urgency }}", "rightValue": 4, "operator": {"type": "number", "operation": "gte"}}]}, "looseTypeValidation": true, "options": {}}},
+    "Page On-Call": {"type": "httpRequest", "params": {"method": "POST", "url": "https://example.com/pager", "options": {}}},
+    "Hourly": {"type": "scheduleTrigger", "params": {"rule": {"interval": [{"field": "hours", "hoursInterval": 1}]}}},
+    "Get Backlog": {"type": "httpRequest", "params": {"method": "GET", "url": "https://example.com/backlog", "options": {}}},
+    "Each Ticket": {"type": "splitInBatches", "params": {"batchSize": 5, "options": {}}},
+    "Score": {"type": "code", "params": {"jsCode": "return $input.all().map(i => ({ json: { ...i.json, score: 1 } }));"}},
+    "Backlog Done": {"type": "noOp"}
+  },
+  "flow": [
+    "Ticket In -> Normalize Ticket -> Classifier -> Route Category",
+    "OpenAI =model=> Classifier",
+    "Parse Result =parser=> Classifier",
+    "Route Category.billing -> Billing Desk -> Urgent?",
+    "Route Category.bug -> Bug Tracker -> Urgent?",
+    "Bug Tracker.error -> Bug Intake Failed",
+    "Route Category.other -> Ignore",
+    "Urgent?.true -> Page On-Call",
+    "Hourly -> Get Backlog -> Each Ticket",
+    "Each Ticket.loop -> Score -> Each Ticket",
+    "Each Ticket.done -> Backlog Done"
+  ]
+}
