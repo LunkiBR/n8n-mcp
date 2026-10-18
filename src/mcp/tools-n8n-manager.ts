@@ -1,5 +1,6 @@
 import { ToolDefinition } from '../types';
 import { AGENT_ACTIONS, DESTRUCTIVE_AGENT_ACTIONS } from './agents-action-map';
+import { lensTools } from './tools-lens';
 
 /**
  * n8n Management Tools
@@ -975,6 +976,7 @@ Two sources:
     },
     annotations: { title: 'List Catalog', readOnlyHint: true, destructiveHint: false, openWorldHint: true },
   },
+  ...lensTools,
 ];
 
 /**

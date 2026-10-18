@@ -48,6 +48,8 @@ import * as n8nHandlers from './handlers-n8n-manager';
 import { handleManageAgents } from './handlers-agents';
 import { handleExploreNodeResources, handleListCatalog } from './handlers-official-tools';
 import { handleUpdatePartialWorkflow } from './handlers-workflow-diff';
+import { handleInspectWorkflow, handleComposeWorkflow } from './handlers-lens';
+import { formatToolJson } from './tool-json';
 import { getToolDocumentation, getToolsOverview } from './tools-documentation';
 import { PROJECT_VERSION } from '../utils/version';
 import { getNodeTypeAlternatives, getWorkflowNodeType } from '../utils/node-utils';
@@ -1059,9 +1061,9 @@ export class N8NDocumentationMCPServer {
             // Clean up the result to ensure it matches the outputSchema
             const cleanResult = this.sanitizeValidationResult(result, name);
             structuredContent = cleanResult;
-            responseText = JSON.stringify(cleanResult, null, 2);
+            responseText = formatToolJson(cleanResult);
           } else {
-            responseText = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+            responseText = typeof result === 'string' ? result : formatToolJson(result);
           }
         } catch (jsonError) {
           logger.warn(`Failed to stringify tool result for ${name}:`, jsonError);
@@ -1834,6 +1836,13 @@ export class N8NDocumentationMCPServer {
       case 'n8n_create_workflow':
         this.validateToolParams(name, args, ['name', 'nodes', 'connections']);
         return n8nHandlers.handleCreateWorkflow(args, this.instanceContext);
+      case 'n8n_inspect_workflow':
+        this.validateToolParams(name, args, ['id']);
+        return handleInspectWorkflow(args, this.instanceContext);
+      case 'n8n_compose_workflow':
+        await this.ensureInitialized();
+        if (!this.repository) throw new Error('Repository not initialized');
+        return handleComposeWorkflow(args, this.repository, this.instanceContext);
       case 'n8n_get_workflow': {
         this.validateToolParams(name, args, ['id']);
         const workflowMode = args.mode || 'full';

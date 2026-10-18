@@ -13,8 +13,9 @@ import { getN8nApiClient } from './handlers-n8n-manager';
 import { N8nApiError, getUserFriendlyErrorMessage } from '../utils/n8n-errors';
 import { logger } from '../utils/logger';
 import { InstanceContext, getInstanceScopeId } from '../types/instance-context';
-import { validateWorkflowStructure, cleanWorkflowForUpdate } from '../services/n8n-validation';
+import { validateWorkflowStructure, cleanWorkflowForUpdate, introducedStructureErrors } from '../services/n8n-validation';
 import { NodeRepository } from '../database/node-repository';
+import { positionAddedNodes } from '../compose/layout';
 import { WorkflowVersioningService } from '../services/workflow-versioning-service';
 import { WorkflowValidator } from '../services/workflow-validator';
 import { EnhancedConfigValidator } from '../services/enhanced-config-validator';
@@ -265,6 +266,9 @@ export async function handleUpdatePartialWorkflow(
       }
     }
 
+    // Nodes added without a position are placed next to the neighbor they are wired to.
+    positionAddedNodes(workflow.nodes ?? [], input.operations as any[]);
+
     // Apply diff operations
     const diffEngine = new WorkflowDiffEngine();
     const diffRequest = input as WorkflowDiffRequest;
@@ -303,8 +307,9 @@ export async function handleUpdatePartialWorkflow(
     // n8n API behavior with edge case workflows by setting SKIP_WORKFLOW_VALIDATION=true.
     // When skipping, both paths treat the workflow as valid so they continue to agree.
     const skipValidation = process.env.SKIP_WORKFLOW_VALIDATION === 'true';
+    // Only problems this diff introduces block it; issues the workflow already had do not.
     const structureErrors = !skipValidation && diffResult.workflow
-      ? validateWorkflowStructure(diffResult.workflow)
+      ? introducedStructureErrors(workflowBefore, validateWorkflowStructure(diffResult.workflow), diffResult.workflow)
       : [];
 
     // If validateOnly, return the same structural-validity verdict the apply path would.

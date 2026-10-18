@@ -308,6 +308,73 @@ function describeParseFailure(error: unknown): string {
 }
 
 // Validate workflow structure
+/**
+ * Structure errors in `after` that `before` did not already have.
+ *
+ * Partial updates must not be blocked by problems the edit did not cause: real workflows,
+ * templates in particular, often carry an orphan node, and refusing every diff on them leaves
+ * no way to edit the workflow. A disconnected-nodes error counts as pre-existing when every
+ * node it names was already disconnected.
+ */
+export function introducedStructureErrors(
+  before: Partial<Workflow> | null | undefined,
+  after: string[],
+  afterWorkflow?: Partial<Workflow>
+): string[] {
+  if (!before || after.length === 0) return after;
+  const beforeErrors = validateWorkflowStructure(before);
+  const disconnectedNames = (workflow: Partial<Workflow>) =>
+    new Set(findDisconnectedNodes(workflow.nodes ?? [], connectedNodeNames(workflow.connections ?? {})).map(n => n.name));
+  const wasDisconnected = disconnectedNames(before);
+  const isDisconnected = afterWorkflow ? disconnectedNames(afterWorkflow) : undefined;
+  return after.filter(error => {
+    if (beforeErrors.includes(error)) return false;
+    // The disconnected-nodes error names every orphan at once; it is new only if the edit left a
+    // node disconnected that was connected before.
+    if (isDisconnected && error.startsWith('Disconnected nodes detected:')) {
+      return [...isDisconnected].some(name => !wasDisconnected.has(name));
+    }
+    return true;
+  });
+}
+
+/**
+ * Names of nodes that appear in connections as a source with at least one target, or as a
+ * target. Every connection type counts, so all AI ports are covered without a hardcoded list.
+ */
+export function connectedNodeNames(connections: Workflow['connections']): Set<string> {
+  const connected = new Set<string>();
+  Object.entries(connections ?? {}).forEach(([sourceName, connection]) => {
+    // A source key counts as an outgoing connection only once it names a target. n8n keeps
+    // the key with empty branches (`main: [[]]`, `main: [null]`) after the last edge is
+    // removed, and an empty key vouching for its own node let two isolated nodes pass (#1101).
+    let hasTarget = false;
+    Object.values(connection as Record<string, unknown>).forEach(connData => {
+      if (!Array.isArray(connData)) return;
+      connData.forEach(outputs => {
+        if (!Array.isArray(outputs)) return;
+        outputs.forEach((target: { node: string }) => {
+          if (target?.node) {
+            connected.add(target.node);
+            hasTarget = true;
+          }
+        });
+      });
+    });
+    if (hasTarget) connected.add(sourceName);
+  });
+  return connected;
+}
+
+/**
+ * Executable nodes with no edge in either direction. Sticky notes are UI-only and never count.
+ * Every node, trigger or not, needs one edge: mcpTrigger only receives inbound ai_tool
+ * connections, and those count like any other target.
+ */
+export function findDisconnectedNodes(nodes: WorkflowNode[], connected: Set<string>): WorkflowNode[] {
+  return nodes.filter(node => !isNonExecutableNode(node.type) && !connected.has(node.name));
+}
+
 export function validateWorkflowStructure(workflow: Partial<Workflow>): string[] {
   const errors: string[] = [];
 
@@ -392,51 +459,8 @@ export function validateWorkflowStructure(workflow: Partial<Workflow>): string[]
       errors.push(`Multi-node workflow has no connections between nodes. Add a connection using: {type: 'addConnection', source: '${nodeNames[0]}', target: '${nodeNames[1]}', sourcePort: 'main', targetPort: 'main'}`);
     } else if (connectionCount > 0 || executableNodes.length > 1) {
       // Second check: detect disconnected nodes (nodes with no incoming or outgoing connections)
-      const connectedNodes = new Set<string>();
-
-      // Collect all nodes that appear in connections (as source or target)
-      // Iterate over ALL connection types present in the data — not a hardcoded list —
-      // so that every AI connection type (ai_outputParser, ai_document, ai_textSplitter,
-      // ai_agent, ai_chain, ai_retriever, etc.) is covered automatically.
-      Object.entries(workflow.connections).forEach(([sourceName, connection]) => {
-        // A source key counts as an outgoing connection only once it names a target. n8n keeps
-        // the key with empty branches (`main: [[]]`, `main: [null]`) after the last edge is
-        // removed, and an empty key vouching for its own node let two isolated nodes pass (#1101).
-        let hasTarget = false;
-
-        // Check every connection type key present on this source node
-        const connectionRecord = connection as Record<string, unknown>;
-        Object.values(connectionRecord).forEach((connData) => {
-          if (connData && Array.isArray(connData)) {
-            connData.forEach((outputs) => {
-              if (Array.isArray(outputs)) {
-                outputs.forEach((target: { node: string }) => {
-                  if (target?.node) {
-                    connectedNodes.add(target.node); // Node has incoming connection
-                    hasTarget = true;
-                  }
-                });
-              }
-            });
-          }
-        });
-
-        if (hasTarget) connectedNodes.add(sourceName); // Node has outgoing connection
-      });
-
-      // Find disconnected nodes (excluding non-executable nodes and triggers)
-      // Non-executable nodes (sticky notes) are UI-only and don't need connections
-      // Trigger nodes need either outgoing connections OR inbound AI connections (for mcpTrigger)
-      const disconnectedNodes = workflow.nodes.filter(node => {
-        // Skip non-executable nodes (sticky notes, etc.) - they're UI-only annotations
-        if (isNonExecutableNode(node.type)) {
-          return false;
-        }
-
-        // Every node, trigger or not, needs one edge in either direction. mcpTrigger only
-        // receives inbound ai_tool connections, and those count like any other target.
-        return !connectedNodes.has(node.name);
-      });
+      const connectedNodes = connectedNodeNames(workflow.connections);
+      const disconnectedNodes = findDisconnectedNodes(workflow.nodes, connectedNodes);
 
       if (disconnectedNodes.length > 0) {
         const disconnectedList = disconnectedNodes.map(n => `"${n.name}" (${n.type})`).join(', ');
