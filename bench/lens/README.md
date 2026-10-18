@@ -50,3 +50,25 @@ node bench/lens/report.mjs
 ```
 
 `harness.mjs` holds fixtures setup and graders; `reference/` holds a reference solution used to validate the create grader.
+
+## Results (2026-10-18)
+
+72 valid runs: Claude Sonnet on upstream (19) and on three successive fork builds (37), Claude Haiku on upstream (8) and the fork (8), plus one calibration run per condition.
+Raw rows: `results/2026-10-18.jsonl`; excluded runs and why: `results/2026-10-18-excluded.txt`.
+Fork builds: `fork` (first build), `fork-r2` (after one round of changes driven by agent traces: edit-ready zoom, resource-mapper schema summaries, compact JSON, placed nodes), `fork-r3` (compose reports the verified change after an edit).
+
+| | upstream, Sonnet | fork, Sonnet | upstream, Haiku | fork, Haiku |
+|---|---|---|---|---|
+| tasks solved | 15/19 | 37/37 | 7/8 | 8/8 |
+| median MCP result chars per run | 104,133 | 13,685 | 225,129 | 34,157 |
+| total MCP result chars | 3.24M | 0.65M (37 runs) | 2.33M | 0.29M |
+| median calls per run | 6 | 5 | 5.5 | 7.5 |
+| median agent tokens per run | 98.1k | 93.0k | 117.1k | 108.7k |
+
+What the numbers say, and what they do not:
+
+- **Every upstream failure is one deterministic cause**: editing a real template that already contains a disconnected node. Upstream refuses every partial or full update of such a workflow, whatever the edit touches, so the agent cannot finish without changing an unrelated node. The fork fixes this in the diff handler (only structure errors an edit introduces block it). On the other tasks both conditions solved everything; this benchmark does not show the lens raising success rates for strong models on read tasks.
+- **Context load is where the lens matters**: the server returned 6.6x to 7.6x less text per run (median), and up to 50x less on edits after `fork-r3` (upstream 148k to 330k chars, fork-r3 2.6k to 7.3k chars).
+- **Agent tokens moved less** (5% to 7% median), because about 83k of every run is fixed overhead (calibration) and because results over 25k chars were spilled to a file the agent could search, which an MCP client would instead put in context. Upstream runs that pulled 600k to 740k chars succeeded only because of that spill; in a native client those results do not fit a small model's context window.
+- **Authoring**: creating a 17-node workflow took upstream agents 27 to 31 calls (mostly `get_node`) and 11k to 19k chars of arguments; fork agents used 3 to 4 calls and 5k to 7k chars, all with zero validation errors.
+- Sample sizes are small (2 runs per task and condition for most tasks); treat per-task medians as indicative.

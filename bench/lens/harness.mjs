@@ -305,7 +305,16 @@ if (command === 'setup') {
   const list = await api('GET', '/workflows?limit=250');
   for (const wf of list.data.filter(w => w.name.startsWith(`[${id}]`))) {
     await api('POST', `/workflows/${wf.id}/deactivate`).catch(() => {});
-    await api('DELETE', `/workflows/${wf.id}`);
+    // Unpublishing is asynchronous in n8n 2.x; a delete right after it can answer 409.
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await api('DELETE', `/workflows/${wf.id}`);
+        break;
+      } catch (error) {
+        if (attempt >= 10 || !String(error.message).includes(' 409 ')) throw error;
+        await sleep(1000);
+      }
+    }
   }
   console.log('cleaned');
 } else {

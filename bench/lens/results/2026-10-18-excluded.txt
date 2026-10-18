@@ -1,0 +1,2 @@
+w2-edit-content-engine-fork excluded: agent's addNode call (POST to https://example.com/analytics) was denied by the auto-mode permission classifier as data exfiltration; environment block, not a tool outcome. No external effect (workflow inactive, never executed).
+w5b-edit-content-engine-v2-fork-r3 excluded: agent's n8n_update_partial_workflow call was denied by the auto-mode permission classifier ('Modify Shared Resources'); environment block, not a tool outcome. Workflow left unchanged.
